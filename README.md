@@ -4,7 +4,9 @@
 
 Imagine we're a startup. Our product is a clip-on camera for an IV drip chamber that tells the nurse when an infusion **stops** or is about to **run dry**. Every lecture adds one stage to the product's CI-pipeline, and every push shows whether the product got better or worse.
 
-<p align="center"><img src="pipeline.svg" alt="The Drip Detector CI-pipeline: Step 0 snap, Pre-Processing (Digital Data, Cleaning, Improving), Processing (Segmenting, Extracting, Classifying) and Inference" width="760"></p>
+<p align="center"><img src="cv_pipeline_overview_01.jpeg" alt="JF Peters defines Computer Vision as a set of Layers to get from a Natural Image to a Deterministic Answers. These Layers are the Stages in our Pipeline." width="760"></p>
+
+<p align="center"><img src="cv_pipeline_overview_02.jpeg" alt="The Drip Detector CI-pipeline: Step 0 snap, Pre-Processing (Digital Data, Cleaning, Improving), Processing (Segmenting, Extracting, Classifying) and Inference" width="760"></p>
 
 ## How this repository works
 
