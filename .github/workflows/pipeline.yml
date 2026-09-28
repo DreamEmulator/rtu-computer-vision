@@ -27,10 +27,9 @@ name: 🚀 CI-Pipeline
 
 on:
   push:
-    branches: [main]
-    paths-ignore: ["**.md", "**.ipynb", "**.svg", ".devcontainer/**", "docs/**"]
-  pull_request:
-    paths-ignore: ["**.md", "**.ipynb", "**.svg", ".devcontainer/**", "docs/**"]
+    paths:
+      - "snaps/**"
+      - "!snaps/**.md"
   workflow_dispatch:
     inputs:
       snap_url:
