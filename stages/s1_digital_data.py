@@ -68,6 +68,11 @@ def fetch_snap(src: str) -> tuple[np.ndarray, int]:
         raise ValueError("Couldn't decode the snap. Send a jpg, png or webp.")
     return img, len(data)
 
+def default_snap() -> str:
+    """No snap_url given? Use the photo in snaps/ (the last one by name if there are several)."""
+    folder = ROOT / "snaps"
+    photos = sorted(p for p in folder.iterdir() if p.suffix.lower() in IMG_EXT) if folder.is_dir() else []
+    return str(photos[-1]) if photos else ""
 
 def hardware() -> dict:
     """What this machine offers OpenCV: vector instructions (SIMD) and CUDA GPUs."""
@@ -127,7 +132,7 @@ def main() -> None:
 
     space = "gray" if images[0].ndim == 2 else c.get("color_space", "gray")
     snap_raw = None
-    snap_src = os.environ.get("SNAP_URL", "").strip()
+    snap_src = os.environ.get("SNAP_URL", "").strip() or default_snap()
     if snap_src:
         snap_raw, nbytes = fetch_snap(snap_src)
         t = time.perf_counter()
