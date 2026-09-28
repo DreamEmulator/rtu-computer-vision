@@ -133,10 +133,35 @@ jobs:
   # Optional: publish the Demo Day report as a website.
   # Switch on: Settings → Pages → Source: GitHub Actions,
   # then Settings → Secrets and variables → Actions → Variables → ENABLE_PAGES = true
+  # 🌐 Publish the Demo Day report as a website, automatically once
+  # Settings → Pages → Source is set to "GitHub Actions" (or force it with the variable ENABLE_PAGES = true).
+  pages-check:
+    name: 🌐 Is GitHub Pages on?
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: read
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ vars.ENABLE_PAGES }}
+        run: |
+          TYPE=$(gh api "repos/${{ github.repository }}/pages" --jq .build_type 2>/dev/null || true)
+          echo "Pages build type: ${TYPE:-not enabled}"
+          if [ "$TYPE" = "workflow" ] || [ "$FORCE" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "🌐 Want the Demo Day report as a website? Settings → Pages → Source: **GitHub Actions**" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   publish:
     name: 🌐 Publish Demo Day page
-    needs: demo-day
-    if: ${{ !cancelled() && needs.demo-day.result == 'success' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES == 'true' }}
+    needs: [demo-day, pages-check]
+    if: ${{ !cancelled() && needs.demo-day.result == 'success' && needs.pages-check.outputs.enabled == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write
