@@ -1,0 +1,25 @@
+# 🔒 Shared plumbing for every stage: report crashes, upload the output, link it from the summary.
+name: Stage publish
+description: Upload build/<stage> as an artifact and link it from the job summary
+inputs:
+  stage:
+    description: Stage key, also the folder in build/ and the artifact name
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: 📡 Tell the snap page if this stage crashed before it could report
+      if: always()
+      shell: bash
+      run: python3 -m stages.webhook crashed --stage ${{ inputs.stage }}
+    - id: upload
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.stage }}
+        path: build/${{ inputs.stage }}
+        retention-days: 14
+        if-no-files-found: warn
+    - if: always() && steps.upload.outputs.artifact-url != ''
+      shell: bash
+      run: echo "📦 [Download this stage's output and preview.png](${{ steps.upload.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"

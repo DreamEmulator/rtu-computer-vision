@@ -1,0 +1,10 @@
+{
+  "name": "Drip Detector — CV pipeline",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "postCreateCommand": "pip install -r requirements-dev.txt && python run_pipeline.py --to 1",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-toolsai.jupyter", "redhat.vscode-yaml"]
+    }
+  }
+}

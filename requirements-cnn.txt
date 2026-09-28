@@ -1,0 +1,3 @@
+# Only installed when classifying.model is cnn (the CPU build is much smaller for CI)
+tensorflow-cpu>=2.16; sys_platform == "linux"
+tensorflow>=2.16; sys_platform != "linux"

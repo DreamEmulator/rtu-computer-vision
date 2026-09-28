@@ -1,0 +1,7 @@
+numpy>=1.26
+opencv-python-headless>=4.9
+scikit-image>=0.22
+scikit-learn>=1.4
+matplotlib>=3.8
+pyyaml>=6.0
+joblib>=1.3

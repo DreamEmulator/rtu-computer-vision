@@ -1,0 +1,45 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ 🧬 TEMPLATE INIT — runs once in your own copy of the template             │
+# └──────────────────────────────────────────────────────────────────────────┘
+# The notebooks and README contain the placeholder __REPO__ in their Colab
+# links. On the first push in a repository created from the template (or a
+# fork), this workflow replaces it with your repository name and commits.
+# In the template repository itself it does nothing.
+#
+# If it failed (for example because the organisation only gives workflows
+# read access), fix the setting in Settings → Actions → General → Workflow
+# permissions, then run it again from the Actions tab.
+# ────────────────────────────────────────────────────────────────────────────
+name: 🧬 Template init
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  personalise:
+    name: Personalise notebook links
+    if: ${{ github.run_number == 1 || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace __REPO__ with ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SOURCE=$(gh api "repos/${{ github.repository }}" \
+            --jq '.template_repository.full_name // (if .fork then .parent.full_name else "" end)')
+          if [ -z "$SOURCE" ]; then
+            echo "This repository was not created from the template — nothing to do."; exit 0
+          fi
+          FILES=$(grep -rl "__REPO__" --include="*.ipynb" --include="*.md" --exclude-dir=.git --exclude-dir=.github . || true)
+          if [ -z "$FILES" ]; then echo "Already personalised."; exit 0; fi
+          sed -i "s#__REPO__#${{ github.repository }}#g" $FILES
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "🧬 Point notebook links at ${{ github.repository }}"
+          git push

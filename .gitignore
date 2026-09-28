@@ -1,0 +1,8 @@
+build/
+data/synthetic/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+.DS_Store
+webhook-events.jsonl

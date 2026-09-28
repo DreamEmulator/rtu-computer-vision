@@ -1,0 +1,149 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  🚀 DRIP DETECTOR — CI-PIPELINE
+#
+#      📸 Step 0 · Snap           a photo from sdux.tech/computer-vision
+#       │
+#      Pre-Processing              Processing
+#      1 Digital Data  ─┐          4 Segmenting  ─┐
+#      2 Cleaning      ─┼────────▶ 5 Extracting  ─┼──▶ 6 🌳 Random forest ─┐
+#      3 Improving     ─┘                         └──▶ 6 🧠 Neural network ─┴─▶ 7 Demo Day 💻 Inference
+#
+#  Every stage is a composite action in its topic folder, imported below with
+#      - uses: ./<topic>/<stage>_<action>
+#  Open that action.yaml to find its 🎛️ TINKER ZONE and 🚦 GATE ZONE.
+#
+#  Every stage follows the same plan (unlike the Underpants Gnomes, ours has a Step 2):
+#    Step 0  snap a picture on sdux.tech/computer-vision → it runs through this pipeline,
+#            and the page shows every webhook as it fires
+#    Step 1  take the input from the previous stage (an artifact)
+#    Step 2  check, improve and play: tinker, push, enjoy the visual results
+#    Step 3  analyse the results; the gates decide if we pass on to the next stage
+#
+#  Runs on: push to main, pull requests, the Run workflow button, and snaps
+#  (workflow_dispatch with snap_url, or repository_dispatch type "snap").
+#  Locally: python run_pipeline.py --snap photo.jpg
+# ══════════════════════════════════════════════════════════════════════════════
+name: 🚀 CI-Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "**.ipynb", "**.svg", ".devcontainer/**", "docs/**"]
+  pull_request:
+    paths-ignore: ["**.md", "**.ipynb", "**.svg", ".devcontainer/**", "docs/**"]
+  workflow_dispatch:
+    inputs:
+      snap_url:
+        description: "📸 URL of a photo to send through every stage (Step 0)"
+        required: false
+      snap_id:
+        description: "Id echoed in every webhook event, so the page knows which snap it is"
+        required: false
+      snap_label:
+        description: "What you think the photo shows: drop | no_drop | low_fluid (optional)"
+        required: false
+      webhook_url:
+        description: "Where to POST progress events (default: repository variable CV_WEBHOOK_URL)"
+        required: false
+  repository_dispatch:
+    types: [snap]
+
+env:
+  SNAP_URL: ${{ inputs.snap_url || github.event.client_payload.snap_url }}
+  SNAP_ID: ${{ inputs.snap_id || github.event.client_payload.snap_id }}
+  SNAP_LABEL: ${{ inputs.snap_label || github.event.client_payload.snap_label }}
+  CV_WEBHOOK_URL: ${{ inputs.webhook_url || github.event.client_payload.webhook_url || vars.CV_WEBHOOK_URL }}
+  CV_WEBHOOK_SECRET: ${{ secrets.CV_WEBHOOK_SECRET }}
+
+concurrency:
+  group: pipeline-${{ github.ref }}-${{ inputs.snap_id || github.event.client_payload.snap_id || 'code' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Pre-Processing ─────────────────────────────────────────── 01_image-processing, 02_image-preprocessing
+  digital-data:
+    name: 1 · Digital Data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./01_image-processing/digital-data_prepare
+
+  cleaning:
+    name: 2 · Cleaning
+    needs: digital-data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./02_image-preprocessing/cleaning_denoise
+
+  improving:
+    name: 3 · Improving
+    needs: cleaning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./02_image-preprocessing/improving_enhance
+
+  # ── Processing ─────────────────────────────── 03_image-segmentation, 04_feature-extraction, 05/06 classifying
+  segmenting:
+    name: 4 · Segmenting
+    needs: improving
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./03_image-segmentation/segmenting_threshold
+
+  extracting:
+    name: 5 · Extracting
+    needs: segmenting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./04_feature-extraction/extracting_describe
+
+  random-forest:
+    name: 6 · Classifying — Random forest
+    needs: extracting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./05_random-forests/classifying_random-forest
+
+  neural-network:
+    name: 6 · Classifying — Neural network
+    needs: extracting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./06_neural-networks/classifying_cnn
+
+  # ── Inference & Demo Day ──────────────────────────────────────────────────────── 07_course-summary
+  demo-day:
+    name: 7 · Demo Day
+    needs: [digital-data, cleaning, improving, segmenting, extracting, random-forest, neural-network]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./07_course-summary/demo-day_report
+
+  # Optional: publish the Demo Day report as a website.
+  # Switch on: Settings → Pages → Source: GitHub Actions,
+  # then Settings → Secrets and variables → Actions → Variables → ENABLE_PAGES = true
+  publish:
+    name: 🌐 Publish Demo Day page
+    needs: demo-day
+    if: ${{ !cancelled() && needs.demo-day.result == 'success' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
