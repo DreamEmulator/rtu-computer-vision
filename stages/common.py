@@ -226,7 +226,7 @@ def contact_sheet(path: Path, rows: list[dict], strips: list[tuple[str, list[np.
             ax.imshow(im, cmap="gray" if im.ndim == 2 else None, vmin=0, vmax=255)
             ax.set_xticks([]); ax.set_yticks([])
             if r == 0:
-                ax.set_title("📸 your snap" if i == snap else rows[i]["label"], fontsize=9)
+                ax.set_title("Your snap" if i == snap else rows[i]["label"], fontsize=9)
             if c == 0:
                 ax.set_ylabel(name, fontsize=9)
     fig.suptitle(title, fontsize=11)
