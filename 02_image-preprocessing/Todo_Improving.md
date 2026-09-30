@@ -6,7 +6,7 @@
 > — the Underpants Gnomes' business plan. Ours has a Step 0, and we actually know what Step 2 is.
 
 ### Step 0 · Snap 📸
-- [ ] Open **[sdux.tech/computer-vision](https://sdux.tech/computer-vision?repo=__REPO__)**, snap a picture and upload it into the pipeline.
+- [ ] Open **[sdux.tech/computer-vision](https://sdux.tech/computer-vision?repo=DreamEmulator/rtu-computer-vision)**, snap a picture and upload it into the pipeline.
 - [ ] Watch the webhooks fire. For **Improving** the page shows: your snap enhanced, and its Canny edges. Contrast of your photo before and after, the share of edge pixels, and milliseconds per frame for both the enhancement and Canny.
 
 <sub>No phone at hand? Run `python run_pipeline.py --snap photo.jpg` locally, or open **Actions → 🚀 CI-Pipeline → Run workflow** and paste an image URL into `snap_url`.</sub>

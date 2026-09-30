@@ -6,7 +6,7 @@
 > — the Underpants Gnomes' business plan. Ours has a Step 0, and we actually know what Step 2 is.
 
 ### Step 0 · Snap 📸
-- [ ] Open **[sdux.tech/computer-vision](https://sdux.tech/computer-vision?repo=__REPO__)**, snap a picture and upload it into the pipeline.
+- [ ] Open **[sdux.tech/computer-vision](https://sdux.tech/computer-vision?repo=DreamEmulator/rtu-computer-vision)**, snap a picture and upload it into the pipeline.
 - [ ] Watch the webhooks fire. For **Classifying · Random Forest** the page shows: the forest's verdict on your snap (drop, no_drop or low_fluid), how sure it is, and the probability of every class. If you told the page what's on the photo, a ✓ or ✗. Performance: training seconds, milliseconds per prediction and the model's size.
 
 <sub>No phone at hand? Run `python run_pipeline.py --snap photo.jpg` locally, or open **Actions → 🚀 CI-Pipeline → Run workflow** and paste an image URL into `snap_url`.</sub>

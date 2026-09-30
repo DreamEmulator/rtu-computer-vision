@@ -6,7 +6,7 @@
 > — the Underpants Gnomes' business plan. Ours has a Step 0, and we actually know what Step 2 is.
 
 ### Step 0 · Snap 📸
-- [ ] Open **[sdux.tech/computer-vision](https://sdux.tech/computer-vision?repo=__REPO__)**, snap a picture and upload it into the pipeline.
+- [ ] Open **[sdux.tech/computer-vision](https://sdux.tech/computer-vision?repo=DreamEmulator/rtu-computer-vision)**, snap a picture and upload it into the pipeline.
 - [ ] First time: the page asks you to connect your repository. After that, every snap runs through your own pipeline.
 - [ ] No drip chamber? Snap anything: a glass of water, a bottle, your screen showing a training frame. A real photo against a model trained on synthetic frames is a lesson of its own.
 - [ ] Watch the webhooks fire. For **Digital Data** the page shows: your photo as it arrived (resolution, file size) next to what the pipeline really works with, a 128 × 128 grey frame. Under ⚡ performance: milliseconds per frame, and what this runner's CPU offers: SIMD instruction sets and the number of CUDA GPUs (on GitHub's free runners: zero).
