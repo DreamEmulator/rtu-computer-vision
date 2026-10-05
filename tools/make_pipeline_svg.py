@@ -1,6 +1,6 @@
 """Draw the Drip Detector pipeline (after the course slide) with the week's stages highlighted.
 
-    python -m tools.make_pipeline_svg      # writes <topic>/pipeline.svg for every topic
+    python -m tools.make_pipeline_svg      # writes <stage folder>/pipeline.svg for every stage
 """
 from __future__ import annotations
 
@@ -12,14 +12,15 @@ INK, GO, PALE, PALE_EDGE, PALE_TEXT, MINT = "#1f4a45", "#7ed957", "#f4fbf7", "#a
 FONT = "'Avenir Next', Avenir, Jost, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
 PRE = ["Digital Data", "Cleaning", "Improving"]
 PRO = ["Segmenting", "Extracting", "Classifying"]
-TOPICS = {
-    "01_image-processing": (["Digital Data"], None),
-    "02_image-preprocessing": (["Cleaning", "Improving"], None),
-    "03_image-segmentation": (["Segmenting"], None),
-    "04_feature-extraction": (["Extracting"], None),
-    "05_random-forests": (["Classifying"], "random forest"),
-    "06_neural-networks": (["Classifying"], "CNN"),
-    "07_course-summary": (PRE + PRO + ["Inference"], None),
+TOPICS = {   # stage folder: (highlighted boxes, sub-label)
+    "1_digital-data": (["Digital Data"], None),
+    "2_cleaning": (["Cleaning"], None),
+    "3_improving": (["Improving"], None),
+    "4_segmenting": (["Segmenting"], None),
+    "5_extracting": (["Extracting"], None),
+    "6_random-forest": (["Classifying"], "random forest"),
+    "6_neural-network": (["Classifying"], "CNN"),
+    "7_demo-day": (PRE + PRO + ["Inference"], None),
     ".": (PRE + PRO + ["Inference"], None),          # the root README: everything, no marker
 }
 W, H, SKEW, SW, SH = 190, 56, 30, 38, 62

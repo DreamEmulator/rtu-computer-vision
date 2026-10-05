@@ -77,7 +77,7 @@ fails, the stages after it never start: expect no events for them, and `pipeline
 |---|---|---|
 | `passed` | all gates green | metrics, snap images |
 | `failed` | a gate failed; the pipeline stops after this stage | `gates[]` where `ok` is false |
-| `off` | switched off in its tinker zone (the CNN until 08.10) | a grey card |
+| `off` | switched off in its action.yaml (the CNN until 08.10) | a grey card |
 | `error` | the stage crashed | `error.message` (and `error.traceback` for the curious) |
 
 `snap.images` holds data-URI PNGs of the photo at this stage (upscaled with sharp pixels to ≥ 256 px):
@@ -108,7 +108,7 @@ sets and its number of CUDA GPUs.
       "title": "Digital Data",
       "emoji": "📷",
       "topic": "Introduction to Image Processing",
-      "action": "01_image-processing/digital-data_prepare",
+      "action": "1_digital-data",
       "lecture": "Tue 22.09"
     },
     {
@@ -117,7 +117,7 @@ sets and its number of CUDA GPUs.
       "title": "Cleaning",
       "emoji": "🧽",
       "topic": "Image Preprocessing Methods",
-      "action": "02_image-preprocessing/cleaning_denoise",
+      "action": "2_cleaning",
       "lecture": "Thu 24.09"
     },
     "…"
@@ -149,7 +149,7 @@ sets and its number of CUDA GPUs.
     "title": "Cleaning",
     "emoji": "🧽",
     "topic": "Image Preprocessing Methods",
-    "action": "02_image-preprocessing/cleaning_denoise",
+    "action": "2_cleaning",
     "lecture": "Thu 24.09"
   },
   "status": "passed",
@@ -212,7 +212,7 @@ sets and its number of CUDA GPUs.
     "title": "Classifying · Random Forest",
     "emoji": "🌳",
     "topic": "Image Classification with Random Forests",
-    "action": "05_random-forests/classifying_random-forest",
+    "action": "6_random-forest",
     "lecture": "Tue 06.10"
   },
   "status": "passed",

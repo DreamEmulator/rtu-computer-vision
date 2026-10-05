@@ -1,0 +1,103 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🎛️ The values · 🔆 Stage 3 · Improving
+#  Lecture: Image Preprocessing Methods · Thu 24.09
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  README.md       why this stage exists, and what to try
+#  action.yaml     you are here: the values improving.py runs with
+#  improving.py    the code: ▶ it, read build/improving/report.md and before_after.png
+#
+#  Nearly half our frames come from a dim ward at night: all brightness values
+#  squeezed into a narrow band. We stretch that band out again, and find the
+#  edges where brightness changes fast.
+#
+#  CI imports this folder as one stage:  - uses: ./3_improving
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+name: "3 · Improving — enhance"
+description: Stretch contrast for the night shift and find the edges.
+
+inputs:
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🎛️  TINKER ZONE — the values: change one, ▶ improving.py, read the report
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  # │ equalize
+  # │ 🏛️ The cumulative distribution function from probability theory (Laplace,
+  # │    Gauss): send every brightness to its percentile, and the histogram comes
+  # │    out flat. Every grey level gets used.
+  # │ ⚡ cv2.equalizeHist: one pass to count 256 bins, one pass through a
+  # │    256-entry lookup table. Two reads per pixel, that's all.
+  # │
+  # │ clahe
+  # │ 🏛️ 1987 · Stephen Pizer et al., for medical CT scans (a medical startup is
+  # │    in good company) — equalize every tile separately, but clip each tile's
+  # │    histogram first so noise isn't blown up. 1994 · Karel Zuiderveld wrote
+  # │    the implementation everyone still copies.
+  # │ 🎮 cv2.cuda.createCLAHE runs the tiles in parallel on the GPU.
+  # │
+  # │ gamma
+  # │ 🏛️ 1890 · Hurter & Driffield measured how photographic film responds to
+  # │    light and called the slope γ. Screens still use it.
+  # │ ⚡ cv2.LUT: a 256-entry lookup table, one memory read per pixel.
+  method:
+    description: "none | equalize | clahe | stretch | gamma"
+    default: "clahe"
+  clahe_clip:
+    description: "Clip limit: higher = more contrast, more noise"
+    default: "2.0"
+  clahe_tile:
+    description: "Tiles per side (8 → an 8×8 grid of tiles)"
+    default: "8"
+  stretch_percentiles:
+    description: "[low, high] percentiles mapped to black and white"
+    default: "[1, 99]"
+  gamma:
+    description: "γ < 1 brightens the shadows, γ > 1 darkens them"
+    default: "1.0"
+
+  # │ canny
+  # │ 🏛️ 1670s · Newton & Leibniz — the derivative: how fast does it change?
+  # │    1968 · Irwin Sobel & Gary Feldman — a 3×3 derivative for images.
+  # │    1986 · John Canny — thin edges to one pixel, then keep weak edges only
+  # │    when they touch strong ones (two thresholds: hysteresis).
+  # │ ⚡ cv2.Canny: Sobel, non-maximum suppression and hysteresis in one call.
+  # │ 🎮 cv2.cuda.createCannyEdgeDetector — the same three steps, one GPU thread
+  # │    per pixel.
+  canny_low:
+    description: "Weak-edge threshold"
+    default: "50"
+  canny_high:
+    description: "Strong-edge threshold"
+    default: "150"
+  pass_on:
+    description: "enhanced | edges — what Segmenting receives"
+    default: "enhanced"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  # │ Contrast = the standard deviation of brightness (Gauss, again).
+  # │ We gate the dimmest 5% of frames: the night shift must still be usable.
+  gate_min_dim_contrast:
+    description: "Brightness σ of the dimmest 5% of frames must reach this"
+    default: "15"
+
+runs:
+  using: composite
+  steps:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🔒 PLUMBING — no need to touch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    - uses: ./.github/actions/stage-setup
+      with:
+        stage: improving
+        previous: cleaning
+    - name: 🔆 Improving
+      shell: bash
+      env:
+        CV_STAGE: improving
+        CV_KNOBS: ${{ toJSON(inputs) }}
+      run: python 3_improving/improving.py
+    - uses: ./.github/actions/stage-publish
+      if: always()
+      with:
+        stage: improving

@@ -16,7 +16,7 @@ Making a model better isn't turning knobs until the number goes up. It's detecti
 The gap between the test accuracy and your three photos is how far your test set is from the real world.
 
 ### 2 · Look at the mistakes
-- [ ] Open `build/random_forest/preview.png`: the confusion matrix on the left, the misclassified test frames on the right, each labelled `true → predicted`.
+- [ ] Open `build/random_forest/before_after.png`: the confusion matrix on the left, the misclassified test frames on the right, each labelled `true → predicted`.
 - [ ] For every wrong frame, write one line: *what in this frame could have fooled the model?*
 - [ ] Sort those lines into piles. The biggest pile is your next experiment.
 
@@ -34,7 +34,7 @@ Measure again, look at the new mistakes, pick the next pile.
 | The mistakes are… | It means | Try |
 |---|---|---|
 | 🌱 cows on unusual backgrounds; horses on grass called *cow* | the model learned the **grass**, not the cow | film cows somewhere else and horses on grass; make segmentation cut the background away |
-| ✂️ half a cow, or no cow at all, in `build/segmenting/preview.png` | **segmentation eats the cow**: the threshold was made for a dark chamber on a bright wall | sandboxes [4a–4d](../03_image-segmentation/segmenting_threshold/sandboxes/) with `FRAME = "cow"`; `invert`, `threshold: "otsu"`, a bigger `min_contour_area` |
+| ✂️ half a cow, or no cow at all, in `build/segmenting/before_after.png` | **segmentation eats the cow**: the threshold was made for a dark chamber on a bright wall | [stage 4](../4_segmenting/README.md): `invert`, `threshold: "otsu"`, a bigger `min_contour_area`; ▶ `segmenting.py` and read *Since your last run* |
 | 🎨 black-and-white cows and brown horses mixed up | the model is **colour-blind**: stage 1 makes everything grey, and stage 5 only looks at brightness | `color_space: "lab"` with `channel: 1` (green ↔ red): grass goes dark, brown goes light, black and white stay in the middle. Or the 🧠 network, which sees every channel |
 | 🔍 cows far away | at 128 × 128 a cow 30 px wide in a 640 px frame becomes 6 px wide: Nyquist says it's gone | `size: "[256, 256]"`, or `crop` to where the cows are |
 | ⚖️ cow recall low while the other classes are fine | too few cows, or too little variety | `class_weight: "balanced"`, `augment_copies: "3"`, another video |

@@ -1,0 +1,51 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🎛️ The values · 🎤 Stage 7 · Demo Day
+#  Lecture: Course Summary · Tue 13.10
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  README.md       why this stage exists, and what to try
+#  action.yaml     you are here: the values demo_day.py runs with
+#  demo_day.py     the code: ▶ it, read build/demo_day/report.md and before_after.png
+#
+#  Collects every stage's metrics, gates, previews and your snap's journey into
+#  one page, sends pipeline.finished to the sdux.tech page, and (if Pages is on)
+#  publishes the report as a website. Runs even when a gate failed.
+#
+#  CI imports this folder as one stage:  - uses: ./7_demo-day
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+name: "7 · Demo Day — report"
+description: Build the Demo Day report from every stage that ran.
+
+inputs:
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🎛️  TINKER ZONE — the values: it's your startup, name it and pitch it
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  project_name:
+    description: "Your startup's name, the title of the report"
+    default: "Drip Detector"
+  pitch:
+    description: "One sentence an investor remembers"
+    default: "A clip-on camera that tells the nurse when an IV drip stops or runs dry."
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+runs:
+  using: composite
+  steps:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🔒 PLUMBING — no need to touch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    - uses: ./.github/actions/stage-setup
+      with:
+        stage: demo_day
+        previous: "*"
+    - name: 🎤 Demo Day
+      shell: bash
+      env:
+        CV_STAGE: demo_day
+        CV_KNOBS: ${{ toJSON(inputs) }}
+      run: python 7_demo-day/demo_day.py
+    - uses: ./.github/actions/stage-publish
+      if: always()
+      with:
+        stage: demo_day
+    - name: Prepare the website
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: build/demo_day

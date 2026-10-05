@@ -1,0 +1,126 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🎛️ The values · 🧬 Stage 5 · Extracting
+#  Lecture: Feature Extraction and Data Preparation · Thu 01.10
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  README.md       why this stage exists, and what to try
+#  action.yaml     you are here: the values extracting.py runs with
+#  extracting.py   the code: ▶ it, read build/extracting/report.md and before_after.png
+#
+#  16 384 pixels in, a few thousand meaningful numbers out. Training frames get
+#  augmented (never the test frames), and everything is put on the same scale.
+#
+#  CI imports this folder as one stage:  - uses: ./5_extracting
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+name: "5 · Extracting — describe"
+description: Augment the training frames and turn every frame into a feature vector.
+
+inputs:
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🎛️  TINKER ZONE — the values: change one, ▶ extracting.py, read the report
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  features:
+    description: "Any of: hog | lbp | histogram | pixels"
+    default: "[hog, lbp]"
+
+  # │ hog — Histogram of Oriented Gradients
+  # │ 🏛️ 2005 · Navneet Dalal & Bill Triggs (INRIA), to find pedestrians.
+  # │    In every cell: which way do the edges point? The angle is atan2 of the
+  # │    Sobel derivatives; the histogram counts directions, weighted by strength.
+  # │    Normalising each block of cells makes it blind to lighting (see stage 3).
+  # │ ⚡ skimage.feature.hog: NumPy + compiled Cython on the CPU.
+  # │ 🎮 cv2.cuda.HOG computes the same descriptor on the GPU, fast enough for
+  # │    real-time pedestrian detection in cars.
+  hog_orientations:
+    description: "Direction bins per cell (9 = every 20°)"
+    default: "9"
+  hog_pixels_per_cell:
+    description: "Cell size in pixels — try 8 and 4, then watch the gate"
+    default: "16"
+  hog_cells_per_block:
+    description: "Cells per normalisation block (per side)"
+    default: "2"
+
+  # │ lbp — Local Binary Patterns
+  # │ 🏛️ 1994–1996 · Timo Ojala, Matti Pietikäinen & David Harwood, University
+  # │    of Oulu (Finland, just across the Baltic). Compare each pixel with P
+  # │    neighbours on a circle: brighter → 1, darker → 0.
+  # │ ⚡ 8 comparisons → 8 bits → one byte per pixel. Texture, as integers.
+  lbp_points:
+    description: "Neighbours P on the circle"
+    default: "8"
+  lbp_radius:
+    description: "Circle radius R in pixels"
+    default: "1"
+  lbp_grid:
+    description: "Grid of cells per side, one histogram each (keeps WHERE the texture is)"
+    default: "4"
+  histogram_bins:
+    description: "Bins for the plain brightness histogram feature"
+    default: "32"
+  pixels_size:
+    description: "Side of the tiny thumbnail for the raw-pixels feature"
+    default: "16"
+
+  # │ scaling
+  # │ 🏛️ Gauss's normal distribution once more: the z-score (x − μ) / σ puts every
+  # │    feature on the same ruler. μ and σ come from the TRAIN split only —
+  # │    measuring them on the test set would be peeking.
+  # │ ⚡ Two vectorised NumPy passes over the matrix.
+  scaling:
+    description: "none | standard | minmax"
+    default: "standard"
+
+  # │ augmentation
+  # │ 🏛️ 1748 · Leonhard Euler named the affine map: rotate, scale, shift, keep
+  # │    straight lines straight. One 2×3 matrix moves every pixel.
+  # │ ⚡ cv2.warpAffine: that matrix times every pixel coordinate, with SIMD.
+  # │ 🎮 GPU texture units do exactly this lookup in hardware — it's how games
+  # │    rotate textures, 60 times a second.
+  augment_copies:
+    description: "Extra augmented copies per training frame (0 = off)"
+    default: "1"
+  augment_flip_horizontal:
+    description: "Mirror left↔right"
+    default: "true"
+  augment_flip_vertical:
+    description: "Mirror top↔bottom — careful: drops don't fall upwards"
+    default: "false"
+  augment_rotate_degrees:
+    description: "Random rotation up to ± this many degrees"
+    default: "8"
+  augment_scale:
+    description: "[min, max] random zoom"
+    default: "[0.92, 1.08]"
+  augment_brightness:
+    description: "Random brightness change up to ± this fraction"
+    default: "0.15"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  # │ A business decision, not a law of nature: the clip-on camera's chip has
+  # │ limited memory, so the description of one frame must stay small.
+  gate_max_features:
+    description: "Maximum length of one feature vector"
+    default: "20000"
+
+runs:
+  using: composite
+  steps:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🔒 PLUMBING — no need to touch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    - uses: ./.github/actions/stage-setup
+      with:
+        stage: extracting
+        previous: segmenting
+    - name: 🧬 Extracting
+      shell: bash
+      env:
+        CV_STAGE: extracting
+        CV_KNOBS: ${{ toJSON(inputs) }}
+      run: python 5_extracting/extracting.py
+    - uses: ./.github/actions/stage-publish
+      if: always()
+      with:
+        stage: extracting

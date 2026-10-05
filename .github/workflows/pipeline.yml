@@ -8,9 +8,8 @@
 #      2 Cleaning      ─┼────────▶ 5 Extracting  ─┼──▶ 6 🌳 Random forest ─┐
 #      3 Improving     ─┘                         └──▶ 6 🧠 Neural network ─┴─▶ 7 Demo Day 💻 Inference
 #
-#  Every stage is a composite action in its topic folder, imported below with
-#      - uses: ./<topic>/<stage>_<action>
-#  Open that action.yaml to find its 🎛️ TINKER ZONE and 🚦 GATE ZONE.
+#  Every stage is a folder, imported below with  - uses: ./<n>_<stage>
+#  In it: README.md (why, and what to try), action.yaml (the values) and <stage>.py (the code this job runs).
 #
 #  Every stage follows the same plan (unlike the Underpants Gnomes, ours has a Step 2):
 #    Step 0  snap a picture, put it online, paste its URL in Actions → Run workflow → it runs
@@ -31,7 +30,7 @@ on:
       - "snaps/**"
       - "!snaps/**.md"
   pull_request:
-    paths-ignore: ["**.md", "**.ipynb", "**.svg", ".devcontainer/**", "docs/**"]
+    paths-ignore: ["**.md", "**.svg", ".devcontainer/**", "docs/**"]
   workflow_dispatch:
     inputs:
       snap_url:
@@ -56,13 +55,13 @@ permissions:
   contents: read
 
 jobs:
-  # ── Pre-Processing ─────────────────────────────────────────── 01_image-processing, 02_image-preprocessing
+  # ── Pre-Processing ──────────────────────────────────────────────────── 1_digital-data, 2_cleaning, 3_improving
   digital-data:
     name: 1 · Digital Data
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./01_image-processing/digital-data_prepare
+      - uses: ./1_digital-data
 
   cleaning:
     name: 2 · Cleaning
@@ -70,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./02_image-preprocessing/cleaning_denoise
+      - uses: ./2_cleaning
 
   improving:
     name: 3 · Improving
@@ -78,16 +77,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./02_image-preprocessing/improving_enhance
+      - uses: ./3_improving
 
-  # ── Processing ─────────────────────────────── 03_image-segmentation, 04_feature-extraction, 05/06 classifying
+  # ── Processing ──────────────────────────────── 4_segmenting, 5_extracting, 6_random-forest, 6_neural-network
   segmenting:
     name: 4 · Segmenting
     needs: improving
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./03_image-segmentation/segmenting_threshold
+      - uses: ./4_segmenting
 
   extracting:
     name: 5 · Extracting
@@ -95,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./04_feature-extraction/extracting_describe
+      - uses: ./5_extracting
 
   random-forest:
     name: 6 · Classifying — Random forest
@@ -103,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./05_random-forests/classifying_random-forest
+      - uses: ./6_random-forest
 
   neural-network:
     name: 6 · Classifying — Neural network
@@ -111,9 +110,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./06_neural-networks/classifying_cnn
+      - uses: ./6_neural-network
 
-  # ── Inference & Demo Day ──────────────────────────────────────────────────────── 07_course-summary
+  # ── Inference & Demo Day ──────────────────────────────────────────────────────────────────── 7_demo-day
   demo-day:
     name: 7 · Demo Day
     needs: [digital-data, cleaning, improving, segmenting, extracting, random-forest, neural-network]
@@ -121,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./07_course-summary/demo-day_report
+      - uses: ./7_demo-day
 
   # Optional: publish the Demo Day report as a website.
   # Switch on: Settings → Pages → Source: GitHub Actions,

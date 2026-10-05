@@ -32,7 +32,7 @@ You get one frame every half second (`--every 0.5`), shrunk to 640 px (`--side 6
 - [ ] Flip through `data/raw/cow/`. Blurry, empty, or a different animal? Delete it. Garbage in, garbage out.
 
 ### 4 · Point the pipeline at your frames
-- [ ] In the 🎛️ tinker zone of [`01_image-processing/digital-data_prepare/action.yaml`](../01_image-processing/digital-data_prepare/action.yaml):
+- [ ] In [`1_digital-data/action.yaml`](../1_digital-data/action.yaml):
   ```yaml
     source:
       default: "folder"
@@ -40,13 +40,13 @@ You get one frame every half second (`--every 0.5`), shrunk to 640 px (`--side 6
       default: "prefix"
   ```
 - [ ] Swap the snap: replace `snaps/default_drip.jpg` with a photo of your own subject (not one of your video frames).
-- [ ] ▶ **Pipeline · everything** in PyCharm's run menu.
+- [ ] ▶ **0 · Everything** in PyCharm's run menu (🚀 Stages).
 
 ### 5 · Follow the gates
-Every stage was tuned for a drip chamber on a bright backlight. Your footage is different, and the first red gate tells you where. Fix the first red stage, run again, repeat. The [Todo](../README.md#the-topics) of that stage tells you which knobs to try.
+Every stage was tuned for a drip chamber on a bright backlight. Your footage is different, and the first red gate tells you where. Fix the first red stage, run again, repeat. The [README](../README.md#the-stages) in that stage's folder tells you which values to try.
 
 ### 6 · Commit and let CI prove it
-- [ ] `git add data/raw 01_image-processing snaps` → commit → push. CI reads the same frames from the repository.
+- [ ] `git add data/raw 1_digital-data snaps` → commit → push. CI reads the same frames from the repository.
 
 ## 🔀 If you see…
 
@@ -54,7 +54,7 @@ Every stage was tuned for a drip chamber on a bright backlight. Your footage is 
 |---|---|---|
 | ❌ gate `images per class` | fewer than 30 frames in a class | film another video, or `--every 0.25` |
 | ❌ `cow comes from one video only` | `group_by: prefix` needs at least two videos per class: one for training, one for the test | film a second video |
-| ❌ `empty mask ratio` or `full mask ratio` in Segmenting | the threshold expects a dark object on a bright wall | sandboxes [4a–4d](../03_image-segmentation/segmenting_threshold/sandboxes/) with `FRAME = "cow"`: try `invert` and `threshold`; or `pass_on: "original"` |
+| ❌ `empty mask ratio` or `full mask ratio` in Segmenting | the threshold expects a dark object on a bright wall | [stage 4](../4_segmenting/README.md): try `invert` and `threshold`, ▶ `segmenting.py` and look at the cow row of `before_after.png`; or `pass_on: "original"` |
 | 99 % test accuracy with `group_by: file`, much less with `prefix` | the 99 % was a leak (see below) | trust the lower number |
 | all gates green, but your snap gets the wrong answer | the test set doesn't look like the real world yet | [How to train our model on cows?](train-our-model-on-cows.md) |
 

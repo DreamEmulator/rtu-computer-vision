@@ -9,7 +9,7 @@ TensorFlow Lite (renamed *LiteRT* in 2024) runs a trained network on a phone, wi
 ## 🪜 Steps
 
 ### 1 · Switch on the network and the export
-- [ ] In the 🎛️ tinker zone of [`06_neural-networks/classifying_cnn/action.yaml`](../06_neural-networks/classifying_cnn/action.yaml):
+- [ ] In [`6_neural-network/action.yaml`](../6_neural-network/action.yaml):
   ```yaml
     enabled:
       default: "true"
@@ -69,7 +69,7 @@ The same model and the same photo give opposite answers, and both times it's sur
 
 | | How | Price |
 |---|---|---|
-| **A** · port it | rebuild stages 1–4 in the app. OpenCV runs on Android and iOS, and each stage's code (the `recipe.py` for Segmenting) is your spec, one `cv2` call at a time | work for the app developer, and two copies that must stay identical |
+| **A** · port it | rebuild stages 1–4 in the app. OpenCV runs on Android and iOS, and each stage's `.py` file (named in `preprocessing.json`) is your spec, one `cv2` call at a time | work for the app developer, and two copies that must stay identical |
 | **B** · bake it in | move preprocessing *into* the network as layers: resizing and rescaling are easy, adaptive thresholds and contours aren't | you may have to simplify stages 1–4 first |
 | **C** · simplify it | `pass_on: "original"` in Segmenting, `method: "none"` in Cleaning and Improving, then measure what accuracy that costs | maybe a few % of accuracy, for an app that's far easier to build |
 

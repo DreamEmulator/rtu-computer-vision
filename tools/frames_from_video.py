@@ -6,7 +6,7 @@
 
 Every frame is named <video>_<number>.jpg, e.g. cow-pasture_0012.jpg. The part before the last "_" says
 which video a frame came from, so stage 1 can keep all frames of one video on the same side of the
-train/test split (group_by: "prefix" in 01_image-processing/digital-data_prepare/action.yaml).
+train/test split (group_by: "prefix" in 1_digital-data/action.yaml).
 Neighbouring frames are near-copies: split them apart and the test set leaks into training.
 """
 from __future__ import annotations
@@ -61,4 +61,4 @@ if __name__ == "__main__":
     a = ap.parse_args()
     total = sum(extract(v, a.label, a.out, a.every, a.side, a.max) for v in a.videos)
     print(f"✅ {total} frames for '{a.label}'. Next: source: \"folder\" and group_by: \"prefix\" in "
-          f"01_image-processing/digital-data_prepare/action.yaml")
+          f"1_digital-data/action.yaml")

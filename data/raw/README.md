@@ -1,6 +1,6 @@
 # Your own frames go here
 
-Set `source: "folder"` in the tinker zone of [`01_image-processing/digital-data_prepare/action.yaml`](../../01_image-processing/digital-data_prepare/action.yaml) and put one folder per class:
+Set `source: "folder"` in [`1_digital-data/action.yaml`](../../1_digital-data/action.yaml) and put one folder per class:
 
 ```
 data/raw/
