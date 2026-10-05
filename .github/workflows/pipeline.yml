@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
 #  🚀 DRIP DETECTOR — CI-PIPELINE
 #
-#      📸 Step 0 · Snap           a photo from sdux.tech/computer-vision
+#      📸 Step 0 · Snap           Actions → Run workflow → paste the URL of a photo
 #       │
 #      Pre-Processing              Processing
 #      1 Digital Data  ─┐          4 Segmenting  ─┐
@@ -13,14 +13,14 @@
 #  Open that action.yaml to find its 🎛️ TINKER ZONE and 🚦 GATE ZONE.
 #
 #  Every stage follows the same plan (unlike the Underpants Gnomes, ours has a Step 2):
-#    Step 0  snap a picture on sdux.tech/computer-vision → it runs through this pipeline,
-#            and the page shows every webhook as it fires
+#    Step 0  snap a picture, put it online, paste its URL in Actions → Run workflow → it runs
+#            through every stage, and Demo Day's report (GitHub Pages) shows what happened to it
 #    Step 1  take the input from the previous stage (an artifact)
 #    Step 2  check, improve and play: tinker, push, enjoy the visual results
 #    Step 3  analyse the results; the gates decide if we pass on to the next stage
 #
-#  Runs on: pull requests (not docs-only ones), the Run workflow button, and snaps
-#  (workflow_dispatch with snap_url, or repository_dispatch type "snap").
+#  Runs on: pull requests (not docs-only ones), pushes to snaps/, and the Run workflow button
+#  (with or without a photo URL). A web page can also send a snap: repository_dispatch type "snap".
 #  Locally: python run_pipeline.py --snap photo.jpg
 # ══════════════════════════════════════════════════════════════════════════════
 name: 🚀 CI-Pipeline
@@ -35,29 +35,21 @@ on:
   workflow_dispatch:
     inputs:
       snap_url:
-        description: "📸 URL of a photo to send through every stage (Step 0)"
-        required: false
-      snap_id:
-        description: "Id echoed in every webhook event, so the page knows which snap it is"
-        required: false
-      snap_label:
-        description: "What you think the photo shows: drop | no_drop | low_fluid (optional)"
-        required: false
-      webhook_url:
-        description: "Where to POST progress events (default: repository variable CV_WEBHOOK_URL)"
+        description: "📸 URL of a photo to send through every stage (empty: the photo in snaps/)"
         required: false
   repository_dispatch:
     types: [snap]
 
 env:
   SNAP_URL: ${{ inputs.snap_url || github.event.client_payload.snap_url }}
-  SNAP_ID: ${{ inputs.snap_id || github.event.client_payload.snap_id }}
-  SNAP_LABEL: ${{ inputs.snap_label || github.event.client_payload.snap_label }}
-  CV_WEBHOOK_URL: ${{ inputs.webhook_url || github.event.client_payload.webhook_url || vars.CV_WEBHOOK_URL }}
+  SNAP_ID: ${{ github.event.client_payload.snap_id }}
+  SNAP_LABEL: ${{ github.event.client_payload.snap_label }}
+  CV_WEBHOOK_URL: ${{ github.event.client_payload.webhook_url || vars.CV_WEBHOOK_URL }}
   CV_WEBHOOK_SECRET: ${{ secrets.CV_WEBHOOK_SECRET }}
 
 concurrency:
-  group: pipeline-${{ github.ref }}-${{ inputs.snap_id || github.event.client_payload.snap_id || 'code' }}
+  # Code runs on the same branch cancel each other; every photo gets its own run.
+  group: pipeline-${{ github.ref }}-${{ (inputs.snap_url || github.event.client_payload.snap_url) && github.run_id || 'code' }}
   cancel-in-progress: true
 
 permissions:

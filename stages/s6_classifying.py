@@ -3,6 +3,7 @@
 🌳 Image Classification with Random Forests (Tue 06.10): 05_random-forests/classifying_random-forest/action.yaml
    the model: 05_random-forests/classifying_random-forest/recipe.py (yours to change)
 🧠 Image Classification with Neural Networks (Thu 08.10): 06_neural-networks/classifying_cnn/action.yaml
+   the network: 06_neural-networks/classifying_cnn/recipe.py (yours to change; needs TensorFlow)
 
 🔒 The exam (cross_validation, grade) stays here, the same for every model: you don't write your own exam.
 
@@ -51,33 +52,21 @@ def grade(y_test, y_pred, n_classes: int) -> dict:
             "confusion": confusion_matrix(y_test, y_pred, labels=labels)}
 
 
-def train_cnn(I_train, y_train, n_classes: int, c: dict, seed: int):
-    """A small CNN. It learns its own features straight from the stage 4 pixels — stage 5's vectors are ignored."""
+def network_recipe():
+    """The network's recipe.py. It imports TensorFlow, which only the network needs, so it's loaded on demand."""
     try:
-        import tensorflow as tf
-    except ImportError:
-        raise SystemExit("❌ The neural network needs TensorFlow → pip install -r requirements-cnn.txt")
-    tf.keras.utils.set_random_seed(seed)
-    layers = tf.keras.layers
-    model = tf.keras.Sequential([layers.Input(shape=I_train.shape[1:]), layers.Rescaling(1 / 255.0)])
-    if (c.get("input_downscale") or 1) > 1:
-        model.add(layers.AveragePooling2D(c["input_downscale"]))
-    for i in range(c.get("conv_layers", 3)):
-        model.add(layers.Conv2D(c.get("filters", 16) * 2 ** i, 3, padding="same", use_bias=not c.get("batch_norm")))
-        if c.get("batch_norm"):
-            model.add(layers.BatchNormalization())
-        model.add(layers.Activation("relu"))
-        model.add(layers.MaxPooling2D())
-    model.add(layers.GlobalAveragePooling2D() if c.get("head", "flatten") == "gap" else layers.Flatten())
-    model.add(layers.Dense(c.get("dense_units", 64), activation="relu"))
-    model.add(layers.Dropout(c.get("dropout", 0.3)))
-    model.add(layers.Dense(n_classes, activation="softmax"))
-    model.compile(optimizer=tf.keras.optimizers.Adam(c.get("learning_rate", 1e-3)),
-                  loss="sparse_categorical_crossentropy", metrics=["accuracy"])
-    order = np.random.default_rng(seed).permutation(len(y_train))
-    history = model.fit(I_train[order], y_train[order], validation_split=0.15, epochs=c.get("epochs", 40),
-                        batch_size=c.get("batch_size", 32), verbose=2)
-    return model, history.history
+        return load_recipe("neural_network")
+    except ModuleNotFoundError as e:
+        if (e.name or "").startswith(("tensorflow", "keras")):
+            raise SystemExit("❌ The neural network needs TensorFlow → pip install -r requirements-cnn.txt")
+        raise
+
+
+def train_cnn(I_train, y_train, n_classes: int, c: dict, seed: int):
+    """Build and train the network from its recipe → (model, history). The notebook calls this too."""
+    network = network_recipe()
+    model = network.build_network(I_train.shape[1:], n_classes, c, seed)
+    return model, network.train(model, I_train, y_train, c, seed)
 
 
 def export_tflite(model, out_dir, how: str, I_test: np.ndarray, classes: list, cfg: dict) -> np.ndarray:

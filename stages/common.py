@@ -76,7 +76,11 @@ def load_recipe(key: str):
     if name not in sys.modules:
         spec = importlib.util.spec_from_file_location(name, ROOT / BY_KEY[key].action_path / "recipe.py")
         sys.modules[name] = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(sys.modules[name])
+        try:
+            spec.loader.exec_module(sys.modules[name])
+        except BaseException:
+            del sys.modules[name]                       # don't keep a half-loaded recipe around
+            raise
     return sys.modules[name]
 
 

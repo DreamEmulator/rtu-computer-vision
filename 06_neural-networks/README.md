@@ -17,6 +17,8 @@ Both run in the same pipeline, so every run is a head-to-head. Out of the box, o
 |---|---|
 | 📅 Lecture | Thu 08.10 |
 | 🛠 How? | [`classifying_cnn/action.yaml`](classifying_cnn/action.yaml) — the 🎛️ tinker zone |
+| 🧪 Recipe | [`classifying_cnn/recipe.py`](classifying_cnn/recipe.py) — the network CI trains, yours to change |
+| 🧪 Sandboxes | [`classifying_cnn/sandboxes/`](classifying_cnn/sandboxes/) — one filter, the network, training, what it learned: ▶ in PyCharm |
 | 📋 What? | [`Todo_Classifying.md`](Todo_Classifying.md) — Step 0 to Step 3 |
 | 📓 Go deeper | [`neural-network.ipynb`](neural-network.ipynb) |
 

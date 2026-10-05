@@ -17,6 +17,10 @@ Also the `extracting` artifact, but a different part of it: the CNN ignores the 
 ### Step 2 · Check, improve and play 🎛️
 Everything you change lives in the 🎛️ TINKER ZONE of [`classifying_cnn/action.yaml`](classifying_cnn/action.yaml). Change one thing, push, and compare the job summary and `preview.png` with the run before.
 
+- [ ] 🧪 Follow the lecture in the [sandboxes](classifying_cnn/sandboxes/), ▶ in PyCharm: **6e** one filter by hand, **6f** the network floor by floor, **6g** training and its learning curve, **6h** the filters it learned and what it sees in your snap. Same [`recipe.py`](classifying_cnn/recipe.py) as CI. 6f–6h need TensorFlow: `pip install -r requirements-cnn.txt`.
+- [ ] 6f: where are 92 % of the weights? 6g: `TRY = {"head": "gap"}`. Fewer weights, less memorising?
+
+
 - [ ] `enabled: "true"`, push, and watch it fail the accuracy gate. Open the learning curve in `preview.png`: training accuracy near 100 %, validation far below. That's overfitting.
 - [ ] Fight it: `dropout: "0.5"`, fewer `epochs`, or more data with `augment_copies: "3"` in stage 5 (the classic cure).
 - [ ] `batch_norm: "true"`: does it help here? Why might it struggle with so few frames?

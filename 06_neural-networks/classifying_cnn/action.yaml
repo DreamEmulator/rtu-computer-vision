@@ -10,7 +10,9 @@
 #
 #  Imported by .github/workflows/pipeline.yml:
 #      - uses: ./06_neural-networks/classifying_cnn
-#  Runs: stages/s6_classifying.py neural_network → train_cnn(), export_tflite()
+#  Runs: recipe.py (the network, yours to change) through stages/s6_classifying.py
+#        6e one filter by hand → 6f build_network() → 6g train() → 6h what it learned
+#  Try it first: ▶ sandboxes/sandbox_6e_convolution.py … 6h (6f–6h need requirements-cnn.txt)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 name: "6 · Classifying — neural network"
 description: Train a small CNN on the pixels and judge it on the test set.

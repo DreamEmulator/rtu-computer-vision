@@ -1,5 +1,9 @@
 # Step 0 · Snap — the contract for sdux.tech/computer-vision
 
+> **Not in use right now.** Students send a snap by pasting a photo URL into **Actions → 🚀 CI-Pipeline →
+> Run workflow** (or `python -m tools.snap <url>`), and read the result in Demo Day's report on GitHub Pages.
+> This contract stays here for a page that wants to start runs and follow their webhooks.
+
 The page does three things: **upload** a photo, **start** the student's pipeline with it, and **show** the
 webhooks the pipeline sends back while it runs. This document is everything the page needs to know.
 
@@ -16,22 +20,13 @@ with a 30 s timeout and accepts anything OpenCV decodes (jpg, png, webp …) up 
 first if you like; the pipeline shrinks it to 128 × 128 anyway.
 
 ## 2 · Start the pipeline
-Either call works. `workflow_dispatch` needs the narrower permission (**Actions: write**) and is recommended.
-
-```http
-POST https://api.github.com/repos/{owner}/{repo}/actions/workflows/pipeline.yml/dispatches
-Authorization: Bearer <installation token>
-Accept: application/vnd.github+json
-
-{"ref": "main",
- "inputs": {"snap_url": "https://sdux.tech/cv/uploads/a1b2c3d4.jpg",
-            "snap_id": "a1b2c3d4",
-            "snap_label": "drop",
-            "webhook_url": "https://sdux.tech/api/cv/webhook"}}
-```
+A page uses `repository_dispatch`: it's the only call that carries `snap_id`, `snap_label` and `webhook_url`.
+The Run workflow form (`workflow_dispatch`) takes `snap_url` and nothing else, so the students see one field.
 
 ```http
 POST https://api.github.com/repos/{owner}/{repo}/dispatches        (needs Contents: write)
+Authorization: Bearer <installation token>
+Accept: application/vnd.github+json
 
 {"event_type": "snap",
  "client_payload": {"snap_url": "…", "snap_id": "a1b2c3d4", "snap_label": "drop", "webhook_url": "…"}}
@@ -45,7 +40,7 @@ POST https://api.github.com/repos/{owner}/{repo}/dispatches        (needs Conten
 | `webhook_url` | no | overrides the repository variable `CV_WEBHOOK_URL` for this run |
 
 **Tokens.** Don't ask students for personal access tokens. A small GitHub App ("SDUX Computer Vision") with the
-permission *Actions: read & write*, installed by each student on their repository, gives your backend a
+permission *Contents: read & write* (for `repository_dispatch`), installed by each student on their repository, gives your backend a
 short-lived installation token per repo. `repo=owner/name` arrives in the page URL: every Todo links to
 `https://sdux.tech/computer-vision?repo=<owner>/<name>`.
 

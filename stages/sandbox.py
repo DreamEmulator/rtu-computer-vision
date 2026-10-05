@@ -32,7 +32,13 @@ LIGHTS = {"good": "🟢", "check": "🟠", "bad": "🔴", "info": "ℹ️"}
 
 def recipe(key: str):
     """The stage's recipe.py: the same functions CI runs on every frame."""
-    return load_recipe(key)
+    try:
+        return load_recipe(key)
+    except ModuleNotFoundError as e:
+        if (e.name or "").startswith(("tensorflow", "keras")):
+            raise SystemExit(f"👾 This sandbox trains a neural network, and this Python has no TensorFlow yet.\n"
+                             f'       "{sys.executable}" -m pip install -r "{ROOT / "requirements-cnn.txt"}"')
+        raise
 
 
 def knobs(key: str, try_: dict) -> tuple[dict, dict]:
