@@ -200,8 +200,17 @@ def bigger(img: np.ndarray, color_space: str = "gray") -> np.ndarray:
     return cv2.resize(img, None, fx=s, fy=s, interpolation=cv2.INTER_NEAREST) if s > 1 else img
 
 
-def look(name: str, panels: list[tuple[str, np.ndarray]]) -> Path:
-    """Side-by-side picture with a caption over each panel. Same file name every run: keep it open, it refreshes."""
+def look(name: str, panels: list[tuple[str, np.ndarray]], cols: int | None = None) -> Path:
+    """Side-by-side picture with a caption over each panel, `cols` per row. Same file name every run: keep it open."""
+    if cols and len(panels) > cols:
+        rows = [row(panels[i:i + cols]) for i in range(0, len(panels), cols)]
+        width = max(r.shape[1] for r in rows)
+        rows = [np.hstack([r, np.full((r.shape[0], width - r.shape[1], 3), 255, np.uint8)]) for r in rows]
+        return save(np.vstack([x for r in rows for x in (r, np.full((8, width, 3), 255, np.uint8))][:-1]), name)
+    return save(row(panels), name)
+
+
+def row(panels: list[tuple[str, np.ndarray]]) -> np.ndarray:
     tiles = []
     for caption, img in panels:
         img = bigger(img) if img.shape[0] < LOOK_HEIGHT // 2 else img
@@ -212,7 +221,7 @@ def look(name: str, panels: list[tuple[str, np.ndarray]]) -> Path:
     h = max(t.shape[0] for t in tiles)
     tiles = [np.vstack([t, np.full((h - t.shape[0], t.shape[1], 3), 255, np.uint8)]) for t in tiles]
     gap = np.full((h, 8, 3), 255, np.uint8)
-    return save(np.hstack([x for t in tiles for x in (t, gap)][:-1]), name)
+    return np.hstack([x for t in tiles for x in (t, gap)][:-1])
 
 
 def rel(path: Path) -> str:

@@ -17,6 +17,10 @@ The `segmenting` artifact: frames with the background masked away.
 ### Step 2 · Check, improve and play 🎛️
 Everything you change lives in the 🎛️ TINKER ZONE of [`extracting_describe/action.yaml`](extracting_describe/action.yaml). Change one thing, push, and compare the job summary and `preview.png` with the run before.
 
+- [ ] 🧪 Follow the lecture in the [sandboxes](extracting_describe/sandboxes/), ▶ in PyCharm: **5a** HOG and **5b** LBP on your snap, **5c** min-max against z-scores on every frame, **5d** rotation, flipping and scaling. Same [`recipe.py`](extracting_describe/recipe.py) as CI. Put one knob in `TRY`, compare the results files, then copy the winner into the tinker zone yourself.
+- [ ] 5c: why do kNN's bars move with the scaling while the forest's stay put? One sentence.
+
+
 - [ ] `features: "[lbp]"` only, then `"[hog]"` only, then add `histogram` or `pixels`. Which feature carries the drop?
 - [ ] `hog_pixels_per_cell`: 32, 8 and 4. Watch the vector length, the gate (the camera chip's memory) and the accuracy.
 - [ ] `augment_copies`: 0 versus 3. More data, or just more of the same?
