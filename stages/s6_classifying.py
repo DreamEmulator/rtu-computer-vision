@@ -1,7 +1,10 @@
 """Stage 6 · Classifying — running, stopped, or running dry?
 
 🌳 Image Classification with Random Forests (Tue 06.10): 05_random-forests/classifying_random-forest/action.yaml
+   the model: 05_random-forests/classifying_random-forest/recipe.py (yours to change)
 🧠 Image Classification with Neural Networks (Thu 08.10): 06_neural-networks/classifying_cnn/action.yaml
+
+🔒 The exam (cross_validation, grade) stays here, the same for every model: you don't write your own exam.
 
     python -m stages.s6_classifying random_forest
     python -m stages.s6_classifying neural_network
@@ -16,27 +19,36 @@ import time
 import joblib
 import numpy as np
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 from sklearn.model_selection import StratifiedGroupKFold, cross_val_score
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
 
-from stages.common import StageReport, fresh_stage_dir, load_config, run_stage, stage_dir, to_display
+from stages.common import (BY_KEY, ROOT, StageReport, fresh_stage_dir, load_config, load_recipe, run_stage, stage_dir,
+                           to_display)
+
+forest = load_recipe("random_forest")
+build_model = forest.build_model  # the notebook imports it from here
 
 
-def build_model(c: dict, seed: int):
-    name = c.get("model", "random_forest")
-    if name == "random_forest":
-        return RandomForestClassifier(n_estimators=c.get("n_estimators", 200), max_depth=c.get("max_depth"),
-                                      min_samples_leaf=c.get("min_samples_leaf", 1), class_weight=c.get("class_weight"),
-                                      random_state=seed, n_jobs=-1)
-    if name == "svm":
-        return SVC(C=c.get("svm_c", 1.0), kernel=c.get("svm_kernel", "rbf"), gamma=c.get("svm_gamma", "scale"),
-                   probability=True, random_state=seed)
-    if name == "knn":
-        return KNeighborsClassifier(n_neighbors=c.get("knn_neighbors", 5))
-    raise SystemExit(f"❌ Unknown model '{name}'. Choose random_forest | svm | knn")
+def cross_validation(model, X, y, groups, folds: int, seed: int) -> np.ndarray | None:
+    """Accuracy on each of `folds` folds of the TRAINING set (Stone, 1974). None when folds is 0 or 1.
+
+    Augmented copies share a group with their original, so they never leak across folds.
+    """
+    if not folds or folds < 2:
+        return None
+    cv = StratifiedGroupKFold(n_splits=folds, shuffle=True, random_state=seed)
+    return cross_val_score(model, X, y, groups=groups, cv=cv)
+
+
+def grade(y_test, y_pred, n_classes: int) -> dict:
+    """The exam on the locked test set: the same for every model."""
+    labels = range(n_classes)
+    return {"accuracy": accuracy_score(y_test, y_pred),
+            "precision (macro)": precision_score(y_test, y_pred, average="macro", zero_division=0),
+            "recall (macro)": recall_score(y_test, y_pred, average="macro", zero_division=0),
+            "f1 (macro)": f1_score(y_test, y_pred, average="macro", zero_division=0),
+            "recalls": recall_score(y_test, y_pred, average=None, labels=labels, zero_division=0),
+            "confusion": confusion_matrix(y_test, y_pred, labels=labels)}
 
 
 def train_cnn(I_train, y_train, n_classes: int, c: dict, seed: int):
@@ -66,6 +78,48 @@ def train_cnn(I_train, y_train, n_classes: int, c: dict, seed: int):
     history = model.fit(I_train[order], y_train[order], validation_split=0.15, epochs=c.get("epochs", 40),
                         batch_size=c.get("batch_size", 32), verbose=2)
     return model, history.history
+
+
+def export_tflite(model, out_dir, how: str, I_test: np.ndarray, classes: list, cfg: dict) -> np.ndarray:
+    """Write model.tflite (and the preprocessing it expects), then grade the FILE on the test set → its predictions.
+
+    The phone runs model.tflite, not model.keras: check the export, don't assume it.
+    """
+    import tensorflow as tf
+    converter = tf.lite.TFLiteConverter.from_keras_model(model)
+    if how == "tflite_quantized":
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]   # weights as 8-bit integers: about 4× smaller
+    elif how != "tflite":
+        raise SystemExit(f"❌ Unknown export '{how}'. Choose none | tflite | tflite_quantized")
+    (out_dir / "model.tflite").write_bytes(converter.convert())
+
+    interpreter = tf.lite.Interpreter(model_path=str(out_dir / "model.tflite"))
+    interpreter.allocate_tensors()
+    inp, out = interpreter.get_input_details()[0], interpreter.get_output_details()[0]
+    preds = []
+    for x in I_test:
+        interpreter.set_tensor(inp["index"], x[None].astype(inp["dtype"]))
+        interpreter.invoke()
+        preds.append(int(interpreter.get_tensor(out["index"])[0].argmax()))
+
+    # The model only understands frames that went through stages 1–4, exactly like in training.
+    before = ["digital_data", "cleaning", "improving", "segmenting"]
+    contract = {"model": "model.tflite", "labels": classes,
+                "input": {"shape": [int(v) for v in inp["shape"]], "dtype": np.dtype(inp["dtype"]).name,
+                          "values": "0–255 pixel values; the model rescales them itself"},
+                "output": "one probability per label, in the order of labels",
+                "preprocessing": [{"stage": k, "code": code_of(k),
+                                   "knobs": {n: v for n, v in cfg[k].items() if not n.startswith("gate_")}}
+                                  for k in before]}
+    (out_dir / "preprocessing.json").write_text(json.dumps(contract, indent=2, default=str, ensure_ascii=False))
+    return np.array(preds)
+
+
+def code_of(key: str) -> str:
+    """Where a stage's maths lives: its recipe.py if it has one, else its stage module."""
+    recipe = ROOT / BY_KEY[key].action_path / "recipe.py"
+    module = recipe if recipe.exists() else next((ROOT / "stages").glob(f"s{BY_KEY[key].n}_*.py"))
+    return str(module.relative_to(ROOT))
 
 
 def plot_results(path, cm, classes, misses, I_test, y_test, y_pred, history, color_space, title):
@@ -137,14 +191,18 @@ def main(key: str) -> None:
         model.save(out_dir / "model.keras")
         report.metric("final validation accuracy", history["val_accuracy"][-1])
         report.metric("parameters", int(model.count_params()))
+        if (export := c.get("export") or "none") != "none":
+            lite_pred = export_tflite(model, out_dir, export, I_test, classes, cfg)
+            report.metric("tflite test accuracy", accuracy_score(y_test, lite_pred))
+            report.metric("tflite agrees with keras %", 100 * float(np.mean(lite_pred == y_pred)))
+            report.perf("tflite size KB", (out_dir / "model.tflite").stat().st_size / 1024)
+            report.note("model.tflite and preprocessing.json are in the neural_network artifact")
         title = "6 · Neural Network"
     else:
         X_train, X_test, X_snap = d["X_train"], d["X_test"], d["X_snap"]
-        model = build_model(c, seed)
-        if (folds := c.get("cv_folds")) and folds > 1:
-            # Augmented copies share a group with their original, so they never leak across folds.
-            cv = StratifiedGroupKFold(n_splits=folds, shuffle=True, random_state=seed)
-            scores = cross_val_score(model, X_train, y_train, groups=d["g_train"], cv=cv)
+        model = forest.build_model(c, seed)
+        scores = cross_validation(model, X_train, y_train, d["g_train"], c.get("cv_folds"), seed)
+        if scores is not None:
             report.metric("cv accuracy (mean ± std)", f"{scores.mean():.3f} ± {scores.std():.3f}")
         model.fit(X_train, y_train)
         train_s = time.time() - t0
@@ -154,11 +212,16 @@ def main(key: str) -> None:
         snap_proba = model.predict_proba(X_snap)[0] if len(X_snap) else None
         joblib.dump(model, out_dir / "model.joblib", compress=3)
         title = f"6 · {c.get('model', 'random_forest').replace('_', ' ').title()}"
+        if hasattr(model, "feature_importances_"):
+            from stages.s5_extracting import feature_names
+            names = feature_names(cfg["extracting"], d["I_test"].shape[1:])
+            if len(names) == len(model.feature_importances_):
+                top = np.argsort(model.feature_importances_)[::-1][:3]
+                report.metric("features it relies on most", [names[i][0] for i in top])
 
     baseline = DummyClassifier(strategy="most_frequent").fit(np.zeros((len(y_train), 1)), y_train)
-    acc = accuracy_score(y_test, y_pred)
-    recalls = recall_score(y_test, y_pred, average=None, labels=range(len(classes)), zero_division=0)
-    cm = confusion_matrix(y_test, y_pred, labels=range(len(classes)))
+    exam = grade(y_test, y_pred, len(classes))
+    acc, recalls, cm = exam["accuracy"], exam["recalls"], exam["confusion"]
     (out_dir / "labels.json").write_text(json.dumps(classes))
     plot_results(out_dir / "preview.png", cm, classes, np.flatnonzero(y_pred != y_test), d["I_test"], y_test, y_pred,
                  history, meta.get("color_space", "gray"), title)
@@ -166,9 +229,8 @@ def main(key: str) -> None:
     report.metric("model", c.get("model", "cnn") if key == "random_forest" else "cnn")
     report.metric("baseline (always guess the majority)", baseline.score(np.zeros((len(y_test), 1)), y_test))
     report.metric("test accuracy", acc)
-    report.metric("precision (macro)", precision_score(y_test, y_pred, average="macro", zero_division=0))
-    report.metric("recall (macro)", recall_score(y_test, y_pred, average="macro", zero_division=0))
-    report.metric("f1 (macro)", f1_score(y_test, y_pred, average="macro", zero_division=0))
+    for k in ("precision (macro)", "recall (macro)", "f1 (macro)"):
+        report.metric(k, exam[k])
     report.metric("recall per class", {k: float(r) for k, r in zip(classes, recalls)})
     report.metric("confusion matrix (rows = true)", " / ".join(" ".join(map(str, row)) for row in cm))
     report.perf("training seconds", train_s)
@@ -181,6 +243,8 @@ def main(key: str) -> None:
         report.snap("prediction", classes[k])
         report.snap("confidence", float(snap_proba[k]))
         report.snap("probabilities", {cls: float(p) for cls, p in zip(classes, snap_proba)})
+        if key == "random_forest" and (v := forest.votes(model, X_snap[0], len(classes))) is not None:
+            report.snap("trees voting for it", f"{v[k]} of {v.sum()}")
         label = os.environ.get("SNAP_LABEL", "").strip()
         if label in classes:
             report.snap("you said", label)

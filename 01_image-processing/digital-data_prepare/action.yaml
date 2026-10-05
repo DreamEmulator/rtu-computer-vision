@@ -51,6 +51,13 @@ inputs:
   seed:
     description: "Random seed — same seed, same split, same results"
     default: "42"
+  # │ Frames from one video are near-copies. If one lands in train and its
+  # │ neighbour in test, the model is graded on what it has already seen: a
+  # │ leak, and an accuracy that's too good to be true. "prefix" keeps every
+  # │ frame of a video on one side (tools/frames_from_video.py names them so).
+  group_by:
+    description: "file (every frame on its own) | prefix (cow-pasture_0012.jpg → cow-pasture stays together)"
+    default: "file"
 
   # │ Rotations by 90° need no maths at all: they are a transpose plus a flip,
   # │ so cv2.rotate only shuffles memory.

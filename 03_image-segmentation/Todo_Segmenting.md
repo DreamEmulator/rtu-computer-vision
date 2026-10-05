@@ -17,10 +17,14 @@ The `improving` artifact: enhanced frames with decent contrast, even from the ni
 ### Step 2 · Check, improve and play 🎛️
 Everything you change lives in the 🎛️ TINKER ZONE of [`segmenting_threshold/action.yaml`](segmenting_threshold/action.yaml). Change one thing, push, and compare the job summary and `preview.png` with the run before.
 
+- [ ] 🧪 Try it on your snap first: ▶ the [sandboxes](segmenting_threshold/sandboxes/) 4a → 4d in PyCharm. They run the same [`recipe.py`](segmenting_threshold/recipe.py) as CI, one sub-step at a time. Put one knob in `TRY`, compare the results files, then copy the winner into the tinker zone yourself.
+- [ ] ▶ `recipe.py`: your knobs on every frame, through to the random forest's test accuracy, in about 5 seconds.
+
 - [ ] `threshold: "otsu"` versus `"adaptive"`. Look at the overlay: what does one global threshold do with uneven light?
 - [ ] Morphology: `"[open]"`, `"[close]"`, `"[open, close]"`, and `morph_kernel: "5"`. Which removes specks, which closes gaps?
 - [ ] `min_contour_area: "150"`: the specks disappear… and so might the drop. It's small.
 - [ ] `fill_holes: "false"`: outlines only. What changes for the features?
+- [ ] `boundary: "inner"`: pass on only the crust of every object. Does the classifier need the inside?
 - [ ] `pass_on`: `crop` zooms in on the biggest object, `mask` passes only the shape, `original` ignores the segmentation. Compare the final accuracy of each.
 - [ ] 📓 Otsu's threshold on the histogram in [`segmenting.ipynb`](segmenting.ipynb).
 

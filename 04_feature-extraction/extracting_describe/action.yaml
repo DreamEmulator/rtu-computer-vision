@@ -9,7 +9,9 @@
 #
 #  Imported by .github/workflows/pipeline.yml:
 #      - uses: ./04_feature-extraction/extracting_describe
-#  Runs: stages/s5_extracting.py → augment(), extract()
+#  Runs: recipe.py (the maths, yours to change) through stages/s5_extracting.py
+#        5a hog_features() · 5b lbp_features() · 5c fit_scaler() · 5d augment()
+#  Try one frame first: ▶ sandboxes/sandbox_5a_hog.py … 5d, same recipe
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 name: "5 · Extracting — describe"
 description: Augment the training frames and turn every frame into a feature vector.

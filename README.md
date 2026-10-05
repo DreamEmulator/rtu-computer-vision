@@ -16,6 +16,8 @@ Every topic of the week has its own folder, and every folder answers the same th
 |---|---|---|
 | **Why?** | `<topic>/README.md` | Where we are on the Drip Detector pipeline, and why the startup needs this stage |
 | **How?** | `<topic>/<stage>_<action>/action.yaml` | The stage as a GitHub Action, annotated: a 🎛️ **tinker zone** with every value you may change (and the mathematician who thought of it), a 🚦 **gate zone** with the promises the stage keeps, and 🔒 plumbing you can ignore |
+| | `<topic>/<stage>_<action>/recipe.py` | 🧪 The maths CI runs, one frame in, one frame out. Yours to change |
+| | `<topic>/<stage>_<action>/sandboxes/` | 🧪 One sub-step of the recipe on one real frame: press ▶ in PyCharm and see the result in a second |
 | **What?** | `<topic>/Todo_<Stage>.md` | What we do now, in four steps |
 
 The four steps, with apologies to the Underpants Gnomes (*Step 1: collect underpants. Step 2: ? Step 3: profit.*):
@@ -39,6 +41,17 @@ The four steps, with apologies to the Underpants Gnomes (*Step 1: collect underp
 
 The random forest and the neural network run side by side after Extracting. The network is switched off until Thursday 08.10 (`enabled` in its tinker zone). Exam: Thu 15.10.
 
+## ❓ How To's
+
+Questions that cross every stage, answered step by step, with forks for what you might see on the way. [All How To's](how-to/)
+
+| ❓ How to… | |
+|---|---|
+| [add my own classes?](how-to/add-my-own-classes.md) | 🎬 film → frames → `data/raw/` → an honest test set |
+| [train our model on cows?](how-to/train-our-model-on-cows.md) | 🔍 read the mistakes, find the stage at fault, fix one thing |
+| [pick which model I am training?](how-to/pick-which-model-i-am-training.md) | ⚖️ forest, SVM, kNN or network, with numbers |
+| [export a tflite file from our pipeline?](how-to/export-a-tflite-file.md) | 📱 a model for a phone, and the catch nobody mentions |
+
 ## Getting started (students)
 
 1. Click **Use this template → Create a new repository**. Make it public if you want the Colab buttons to work.
@@ -52,7 +65,7 @@ The random forest and the neural network run side by side after Extracting. The 
    ```
    Open a pull request. CI runs on it, and the PR template asks for your hypothesis and the Demo Day numbers of `main` against your branch. That's Step 3.
 
-Working locally or in a Codespace (the repository includes a dev container):
+Working locally in **PyCharm**: open the folder and give it its own interpreter (Settings → Project → Python Interpreter → Add Interpreter → Add Local Interpreter → Virtualenv in `.venv`), then open `requirements-dev.txt` and click *Install requirements*. The run menu next to ▶ already lists the sandboxes, the recipes and the pipeline (from `.run/`). Working locally in a terminal or in a Codespace (the repository includes a dev container):
 
 ```bash
 pip install -r requirements-dev.txt          # add requirements-cnn.txt for the neural network
@@ -64,7 +77,7 @@ jupyter lab                                  # notebooks live in the topic folde
 
 ## Taking it for real: your own subject
 
-The pipeline doesn't know it's looking at drips. Put your frames in one folder per class and set `source: "folder"` in the tinker zone of [Digital Data](01_image-processing/digital-data_prepare/action.yaml). See [data/raw/README.md](data/raw/README.md). Then retune stage by stage; the gates tell you where your data differs from ours.
+The pipeline doesn't know it's looking at drips. Put your frames in one folder per class and set `source: "folder"` in the tinker zone of [Digital Data](01_image-processing/digital-data_prepare/action.yaml). See [data/raw/README.md](data/raw/README.md), or follow [How to add my own classes?](how-to/add-my-own-classes.md) from video to green gates. Then retune stage by stage; the gates tell you where your data differs from ours.
 
 ## For the lecturer
 
@@ -79,14 +92,18 @@ The pipeline doesn't know it's looking at drips. Put your frames in one folder p
 01_image-processing/ … 07_course-summary/
   README.md                    ← Why?   where we are, and why the startup needs it
   <stage>_<action>/action.yaml ← How?   the stage as a composite action: tinker zone, gate zone, plumbing
+  <stage>_<action>/recipe.py   ← 🧪     the maths CI runs (one frame in, one frame out)
+  <stage>_<action>/sandboxes/  ← 🧪     one sub-step of the recipe on one real frame, ▶ in PyCharm
   Todo_<Stage>.md              ← What?  Step 0 snap → Step 1 input → Step 2 play → Step 3 decide
   <stage>.ipynb                ← go deeper, with the same functions CI runs
   pipeline.svg                 ← the "you are here" picture
 .github/workflows/pipeline.yml ← the orchestrator: imports each stage with uses: ./<topic>/<stage>_<action>
 .github/actions/               ← shared plumbing: setup, webhooks, artifacts
-stages/                        ← the Python behind every stage (s1…s7), the stage map and the webhook sender
+stages/                        ← the plumbing behind every stage (s1…s7), the sandboxes, the stage map and the webhook sender
+.run/                          ← PyCharm run configurations: ▶ sandboxes, recipes and the pipeline
 run_pipeline.py                ← run the stages locally
-tools/                         ← synthetic dataset, snap trigger, webhook receiver, pipeline pictures
+tools/                         ← synthetic dataset, frames from video, snap trigger, webhook receiver, pipeline pictures
+how-to/                        ← ❓ How To's: questions that cross every stage
 docs/step-0-snap.md            ← the contract for the sdux.tech page
 data/raw/                      ← your own frames (source: folder)
 ```

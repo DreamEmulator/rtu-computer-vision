@@ -17,6 +17,8 @@ A random forest learns from the features and is graded only on the test set we l
 |---|---|
 | 📅 Lecture | Tue 06.10 |
 | 🛠 How? | [`classifying_random-forest/action.yaml`](classifying_random-forest/action.yaml) — the 🎛️ tinker zone |
+| 🧪 Recipe | [`classifying_random-forest/recipe.py`](classifying_random-forest/recipe.py) — the model CI trains, yours to change |
+| 🧪 Sandboxes | [`classifying_random-forest/sandboxes/`](classifying_random-forest/sandboxes/) — one tree, the forest, the vote, the exam: ▶ in PyCharm |
 | 📋 What? | [`Todo_Classifying.md`](Todo_Classifying.md) — Step 0 to Step 3 |
 | 📓 Go deeper | [`random-forest.ipynb`](random-forest.ipynb) |
 

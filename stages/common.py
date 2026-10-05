@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import base64
 import csv
+import importlib.util
 import json
 import os
 import shutil
@@ -64,6 +65,19 @@ def load_config() -> dict:
     if stage in cfg and knobs:
         cfg[stage].update({k: parse_value(v) for k, v in json.loads(knobs).items()})
     return cfg
+
+
+def load_recipe(key: str):
+    """The recipe.py next to a stage's action.yaml: the maths CI runs, and the sandboxes call too.
+
+    Topic folders start with a digit, so they can't be imported as packages: load the file by its path.
+    """
+    name = f"recipe_{key}"
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(name, ROOT / BY_KEY[key].action_path / "recipe.py")
+        sys.modules[name] = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sys.modules[name])
+    return sys.modules[name]
 
 
 def stage_dir(key: str) -> Path:

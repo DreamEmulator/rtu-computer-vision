@@ -31,6 +31,8 @@ def _index(which: str | int | None, default: int, last: bool = False) -> int:
 
 def run(start=None, stop=None, keep_going: bool = False) -> bool:
     """Returns True when every stage that ran passed its gates."""
+    from stages.deps import check
+    check()  # a friendly message instead of a traceback when this Python lacks a package
     from stages import webhook
     from stages.common import run_stage
     ok = True

@@ -17,6 +17,8 @@ A startup never has enough labelled data, so we also invent extra training frame
 |---|---|
 | 📅 Lecture | Thu 01.10 |
 | 🛠 How? | [`extracting_describe/action.yaml`](extracting_describe/action.yaml) — the 🎛️ tinker zone |
+| 🧪 Recipe | [`extracting_describe/recipe.py`](extracting_describe/recipe.py) — the maths CI runs, yours to change |
+| 🧪 Sandboxes | [`extracting_describe/sandboxes/`](extracting_describe/sandboxes/) — HOG, LBP, scaling, augmentation on real frames: ▶ in PyCharm |
 | 📋 What? | [`Todo_Extracting.md`](Todo_Extracting.md) — Step 0 to Step 3 |
 | 📓 Go deeper | [`extracting.ipynb`](extracting.ipynb) |
 

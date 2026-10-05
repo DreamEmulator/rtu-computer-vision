@@ -19,7 +19,7 @@
 #    Step 2  check, improve and play: tinker, push, enjoy the visual results
 #    Step 3  analyse the results; the gates decide if we pass on to the next stage
 #
-#  Runs on: push to main, pull requests, the Run workflow button, and snaps
+#  Runs on: pull requests (not docs-only ones), the Run workflow button, and snaps
 #  (workflow_dispatch with snap_url, or repository_dispatch type "snap").
 #  Locally: python run_pipeline.py --snap photo.jpg
 # ══════════════════════════════════════════════════════════════════════════════
@@ -30,6 +30,8 @@ on:
     paths:
       - "snaps/**"
       - "!snaps/**.md"
+  pull_request:
+    paths-ignore: ["**.md", "**.ipynb", "**.svg", ".devcontainer/**", "docs/**"]
   workflow_dispatch:
     inputs:
       snap_url:

@@ -17,6 +17,8 @@ Segmenting decides which pixels belong to the object: the chamber, the fluid, th
 |---|---|
 | 📅 Lecture | Tue 29.09 |
 | 🛠 How? | [`segmenting_threshold/action.yaml`](segmenting_threshold/action.yaml) — the 🎛️ tinker zone |
+| 🧪 Recipe | [`segmenting_threshold/recipe.py`](segmenting_threshold/recipe.py) — the maths CI runs, yours to change |
+| 🧪 Sandboxes | [`segmenting_threshold/sandboxes/`](segmenting_threshold/sandboxes/) — one sub-step on one real frame, ▶ in PyCharm |
 | 📋 What? | [`Todo_Segmenting.md`](Todo_Segmenting.md) — Step 0 to Step 3 |
 | 📓 Go deeper | [`segmenting.ipynb`](segmenting.ipynb) |
 
