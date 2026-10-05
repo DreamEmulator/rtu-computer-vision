@@ -10,7 +10,7 @@
 #
 #  Imported by .github/workflows/pipeline.yml:
 #      - uses: ./06_neural-networks/classifying_cnn
-#  Runs: stages/s6_classifying.py neural_network → train_cnn()
+#  Runs: stages/s6_classifying.py neural_network → train_cnn(), export_tflite()
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 name: "6 · Classifying — neural network"
 description: Train a small CNN on the pixels and judge it on the test set.
@@ -72,6 +72,16 @@ inputs:
   batch_size:
     description: "Frames per step"
     default: "32"
+
+  # │ export
+  # │ 🏛️ 2017 · Google's TensorFlow Lite: the same network, flattened into one
+  # │    file that a phone runs without Python. "quantized" stores every weight
+  # │    as an 8-bit integer instead of a 32-bit float: about 4× smaller.
+  # │ ⚡ On the phone, TFLite hands the maths to its GPU or neural engine
+  # │    through "delegates", the way TensorFlow hands it to cuDNN here.
+  export:
+    description: "none | tflite | tflite_quantized — also write model.tflite and preprocessing.json"
+    default: "none"
 
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

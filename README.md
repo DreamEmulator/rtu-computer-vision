@@ -41,6 +41,17 @@ The four steps, with apologies to the Underpants Gnomes (*Step 1: collect underp
 
 The random forest and the neural network run side by side after Extracting. The network is switched off until Thursday 08.10 (`enabled` in its tinker zone). Exam: Thu 15.10.
 
+## ❓ How To's
+
+Questions that cross every stage, answered step by step, with forks for what you might see on the way. [All How To's](how-to/)
+
+| ❓ How to… | |
+|---|---|
+| [add my own classes?](how-to/add-my-own-classes.md) | 🎬 film → frames → `data/raw/` → an honest test set |
+| [train our model on cows?](how-to/train-our-model-on-cows.md) | 🔍 read the mistakes, find the stage at fault, fix one thing |
+| [pick which model I am training?](how-to/pick-which-model-i-am-training.md) | ⚖️ forest, SVM, kNN or network, with numbers |
+| [export a tflite file from our pipeline?](how-to/export-a-tflite-file.md) | 📱 a model for a phone, and the catch nobody mentions |
+
 ## Getting started (students)
 
 1. Click **Use this template → Create a new repository**. Make it public if you want the Colab buttons to work.
@@ -66,7 +77,7 @@ jupyter lab                                  # notebooks live in the topic folde
 
 ## Taking it for real: your own subject
 
-The pipeline doesn't know it's looking at drips. Put your frames in one folder per class and set `source: "folder"` in the tinker zone of [Digital Data](01_image-processing/digital-data_prepare/action.yaml). See [data/raw/README.md](data/raw/README.md). Then retune stage by stage; the gates tell you where your data differs from ours.
+The pipeline doesn't know it's looking at drips. Put your frames in one folder per class and set `source: "folder"` in the tinker zone of [Digital Data](01_image-processing/digital-data_prepare/action.yaml). See [data/raw/README.md](data/raw/README.md), or follow [How to add my own classes?](how-to/add-my-own-classes.md) from video to green gates. Then retune stage by stage; the gates tell you where your data differs from ours.
 
 ## For the lecturer
 
@@ -91,7 +102,8 @@ The pipeline doesn't know it's looking at drips. Put your frames in one folder p
 stages/                        ← the plumbing behind every stage (s1…s7), the sandboxes, the stage map and the webhook sender
 .run/                          ← PyCharm run configurations: ▶ sandboxes, recipes and the pipeline
 run_pipeline.py                ← run the stages locally
-tools/                         ← synthetic dataset, snap trigger, webhook receiver, pipeline pictures
+tools/                         ← synthetic dataset, frames from video, snap trigger, webhook receiver, pipeline pictures
+how-to/                        ← ❓ How To's: questions that cross every stage
 docs/step-0-snap.md            ← the contract for the sdux.tech page
 data/raw/                      ← your own frames (source: folder)
 ```

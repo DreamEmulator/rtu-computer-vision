@@ -12,7 +12,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedGroupKFold, train_test_split
 
 from stages.common import (ROOT, SNAP, ImageSet, StageReport, contact_sheet, fresh_stage_dir, load_config, run_stage,
                            save_images)
@@ -51,6 +51,38 @@ def find_images(folder: Path) -> list[tuple[Path, str]]:
     for class_dir in sorted(p for p in folder.iterdir() if p.is_dir()):
         items += [(p, class_dir.name) for p in sorted(class_dir.iterdir()) if p.suffix.lower() in IMG_EXT]
     return items
+
+
+def groups_of(items: list[tuple[Path, str]], how: str) -> list[str]:
+    """Which frames must stay together on one side of the split.
+
+    file    every file on its own (fine for separate photos)
+    prefix  everything before the last "_" in the file name: cow-pasture_0012.jpg → cow-pasture,
+            so all frames of one video (tools/frames_from_video.py) stay together
+    """
+    if how == "file":
+        return [str(p) for p, _ in items]
+    if how == "prefix":
+        return [f"{label}/{p.stem.rsplit('_', 1)[0]}" for p, label in items]
+    raise SystemExit(f"❌ Unknown group_by '{how}'. Choose file | prefix")
+
+
+def split(labels: list[str], groups: list[str], test_size: float, seed: int) -> np.ndarray:
+    """Indices of the training frames. Stratified (every class in train and test), seeded, and groups never cross."""
+    if len(set(groups)) == len(groups):                   # every frame its own group: the classic split
+        train_idx, _ = train_test_split(np.arange(len(labels)), test_size=test_size, stratify=labels, random_state=seed)
+        return train_idx
+    per_class = {k: len({g for g, l in zip(groups, labels) if l == k}) for k in sorted(set(labels))}
+    few = [k for k, n in per_class.items() if n < 2]
+    if few:
+        raise SystemExit(f"❌ {', '.join(few)} {'comes' if len(few) == 1 else 'come'} from one video only, so "
+                         f"{'it' if len(few) == 1 else 'they'} can't be in both train and test. Record a second video per class, or set group_by: file (and accept the leak).")
+    folds = StratifiedGroupKFold(n_splits=max(2, min(round(1 / test_size), min(per_class.values()))),
+                                 shuffle=True, random_state=seed)
+    for train_idx, test_idx in folds.split(np.zeros(len(labels)), labels, groups):
+        if {labels[i] for i in test_idx} == set(labels):  # the first fold with every class in it
+            return train_idx
+    raise SystemExit("❌ No split puts every class in the test set. Record more videos per class.")
 
 
 def fetch_snap(src: str) -> tuple[np.ndarray, int]:
@@ -111,9 +143,9 @@ def main() -> None:
     if min(labels.count(k) for k in classes) < 2:
         raise SystemExit("❌ Every class needs at least 2 images to split into train and test.")
 
-    # Lock the test set on day one: stratified, seeded, never touched by training.
-    train_idx, _ = train_test_split(np.arange(len(items)), test_size=c.get("test_size", 0.25),
-                                    stratify=labels, random_state=c.get("seed", 42))
+    # Lock the test set on day one: stratified, seeded, never touched by training, groups never split.
+    groups = groups_of(items, c.get("group_by") or "file")
+    train_idx = split(labels, groups, c.get("test_size", 0.25), c.get("seed", 42))
     train_set = set(train_idx.tolist())
 
     rows, images, unreadable, resolutions = [], [], 0, []
@@ -166,6 +198,9 @@ def main() -> None:
     report.metric("images", len(data))
     report.metric("images per class", [per_class[k] for k in classes])
     report.metric("train / test", [sum(r["split"] == "train" for r in data), sum(r["split"] == "test" for r in data)])
+    if (c.get("group_by") or "file") != "file":
+        report.metric(f"groups per class ({c['group_by']})",
+                      [len({g for g, l in zip(groups, labels) if l == k}) for k in classes])
     report.metric("median raw resolution (h×w)", "×".join(str(int(v)) for v in np.median(resolutions, axis=0)))
     report.metric("output shape", "×".join(map(str, images[0].shape)))
     report.metric("colour space", space)

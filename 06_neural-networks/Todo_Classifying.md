@@ -27,6 +27,7 @@ Everything you change lives in the 🎛️ TINKER ZONE of [`classifying_cnn/acti
 ### Step 3 · Analyse, and decide if we pass on 🚦
 - [ ] 🚦 **Gates:** the same promises as the forest: accuracy ≥ 0.85, worst-class recall ≥ 0.75.
 - [ ] Beat the forest, or explain why you can't with 360 frames.
+- [ ] On a phone? `export: "tflite_quantized"`, and read ❓ [How to export a tflite file from our pipeline?](../how-to/export-a-tflite-file.md) before you promise anyone an app.
 
 **Ready to ship?** A model that doesn't beat the forest doesn't ship, however modern it is. Keep `enabled: "true"` only when its gates pass, and argue your case in the pull request: *"Neural network: what I changed and why"*.
 

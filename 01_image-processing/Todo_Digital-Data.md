@@ -23,7 +23,7 @@ Everything you change lives in the 🎛️ TINKER ZONE of [`digital-data_prepare
 - [ ] `size: "[32, 32]"`: is the drop still there? Nyquist and Shannon say it can't be. Put it back afterwards; every later stage feels this change.
 - [ ] At `size: "[64, 64]"`, compare `interpolation: "nearest"` with `"area"`. Look for jagged edges (aliasing).
 - [ ] `color_space: "hsv"` with `channel: "2"`, then `"lab"` with `channel: "0"`. Which one looks most like the grey version, and why?
-- [ ] Bring your own data: photos in `data/raw/drop/`, `data/raw/no_drop/`, `data/raw/low_fluid/`, then `source: "folder"`.
+- [ ] Bring your own data: photos in `data/raw/drop/`, `data/raw/no_drop/`, `data/raw/low_fluid/`, then `source: "folder"`. From video, with an honest test set: ❓ [How to add my own classes?](../how-to/add-my-own-classes.md)
 - [ ] 📓 Go deeper in [`digital-data.ipynb`](digital-data.ipynb).
 
 ### Step 3 · Analyse, and decide if we pass on 🚦

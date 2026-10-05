@@ -73,6 +73,41 @@ def extract(gray: np.ndarray, cfg: dict) -> dict[str, np.ndarray]:
     return out
 
 
+def feature_names(cfg: dict, shape: tuple) -> list[tuple[str, tuple | None]]:
+    """What every number in the feature vector describes → [(name, (y0, x0, y1, x1) region of the frame, or None)].
+
+    Same order as extract(), so feature i of the vector is entry i of this list.
+    """
+    h, w = shape[:2]
+    out = []
+    for name in cfg.get("features") or ["hog"]:
+        if name == "hog":   # skimage's order: block row, block column, cell in block (row, column), direction
+            p = hog_params(cfg)
+            ppc, cpb, o = p["pixels_per_cell"][0], p["cells_per_block"][0], p["orientations"]
+            for by in range(h // ppc - cpb + 1):
+                for bx in range(w // ppc - cpb + 1):
+                    for cy in range(cpb):
+                        for cx in range(cpb):
+                            y, x = by + cy, bx + cx
+                            out += [(f"HOG cell ({y},{x}) {180 * k // o}–{180 * (k + 1) // o}°",
+                                     (y * ppc, x * ppc, (y + 1) * ppc, (x + 1) * ppc)) for k in range(o)]
+        elif name == "lbp":
+            pts, grid = cfg.get("lbp_points", 8), cfg.get("lbp_grid", 4)
+            kinds = {0: "bright spots", pts: "dark spots", pts + 1: "noisy texture"}
+            for gy in range(grid):
+                for gx in range(grid):
+                    box = (gy * h // grid, gx * w // grid, (gy + 1) * h // grid, (gx + 1) * w // grid)
+                    out += [(f"LBP cell ({gy},{gx}) {kinds.get(b, f'edges {b}/{pts}')}", box) for b in range(pts + 2)]
+        elif name == "histogram":
+            bins = cfg.get("histogram_bins", 32)
+            out += [(f"brightness {256 * b // bins}–{256 * (b + 1) // bins - 1}", None) for b in range(bins)]
+        elif name == "pixels":
+            s = cfg.get("pixels_size", 16)
+            out += [(f"pixel ({r},{c}) of the {s}×{s} thumbnail", (r * h // s, c * w // s, (r + 1) * h // s, (c + 1) * w // s))
+                    for r in range(s) for c in range(s)]
+    return out
+
+
 def hog_picture(gray: np.ndarray, cfg: dict) -> np.ndarray:
     _, vis = hog(gray, visualize=True, **hog_params(cfg))
     return np.clip(vis / max(vis.max(), 1e-9) * 255, 0, 255).astype(np.uint8)

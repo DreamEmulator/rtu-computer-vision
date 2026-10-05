@@ -10,7 +10,9 @@
 #
 #  Imported by .github/workflows/pipeline.yml:
 #      - uses: ./05_random-forests/classifying_random-forest
-#  Runs: stages/s6_classifying.py random_forest → build_model()
+#  Runs: recipe.py (the model, yours to change) through stages/s6_classifying.py
+#        6a grow_tree() → 6b build_model() → 6c votes() → 6d the exam (🔒)
+#  Try it on the real features first: ▶ sandboxes/sandbox_6a_tree.py … 6d, same recipe
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 name: "6 · Classifying — random forest"
 description: Train a random forest (or SVM, or kNN) on the features and judge it on the test set.
@@ -40,6 +42,9 @@ inputs:
   n_estimators:
     description: "Number of trees in the forest"
     default: "200"
+  max_features:
+    description: "Features each split may look at: sqrt | log2 | a share like 0.5 | null (all: every tree alike)"
+    default: "sqrt"
   max_depth:
     description: "Maximum depth of each tree (null = grow until pure)"
     default: "null"
