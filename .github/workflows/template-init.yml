@@ -1,8 +1,7 @@
 # ┌──────────────────────────────────────────────────────────────────────────┐
 # │ 🧬 TEMPLATE INIT — runs once in your own copy of the template             │
 # └──────────────────────────────────────────────────────────────────────────┘
-# The notebooks and README contain the placeholder __REPO__ in their Colab
-# links. On the first push in a repository created from the template (or a
+# The Markdown files may link to this template repository by name. On the first push in a repository created from the template (or a
 # fork), this workflow replaces it with your repository name and commits.
 # In the template repository itself it does nothing.
 #
@@ -22,7 +21,7 @@ permissions:
 
 jobs:
   personalise:
-    name: Personalise notebook links
+    name: Personalise links
     if: ${{ github.run_number == 1 || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
@@ -36,10 +35,10 @@ jobs:
           if [ -z "$SOURCE" ]; then
             echo "This repository was not created from the template — nothing to do."; exit 0
           fi
-          FILES=$(grep -rliF -e "__REPO__" -e "$SOURCE" --include="*.ipynb" --include="*.md" --exclude-dir=.git --exclude-dir=.github . || true)
+          FILES=$(grep -rliF -e "__REPO__" -e "$SOURCE" --include="*.md" --exclude-dir=.git --exclude-dir=.github . || true)
           if [ -z "$FILES" ]; then echo "Already personalised."; exit 0; fi
           sed -i -e "s#__REPO__#${{ github.repository }}#g" -e "s#$SOURCE#${{ github.repository }}#gI" $FILES
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "🧬 Point notebook links at ${{ github.repository }}"
+          git commit -am "🧬 Point links at ${{ github.repository }}"
           git push

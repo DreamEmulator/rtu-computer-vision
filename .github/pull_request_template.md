@@ -4,8 +4,8 @@
 
 **Hypothesis** — If I change … then … because …
 
-**What I changed in the 🎛️ tinker zone** (one value at a time)
-- `<topic>/<stage>_<action>/action.yaml` → `knob`: old → new
+**What I changed** (one value at a time, or one change in the code)
+- `<n>_<stage>/action.yaml` → `value`: old → new
 
 ## 📊 Result
 

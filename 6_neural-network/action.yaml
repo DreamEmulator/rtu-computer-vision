@@ -1,0 +1,121 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🎛️ The values · 🧠 Stage 6 · Classifying · Neural Network
+#  Lecture: Image Classification with Neural Networks · Thu 08.10
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  README.md       why this stage exists, and what to try
+#  action.yaml     you are here: this stage's values, neural_network.py runs with them
+#  neural_network.py the code: ▶ it, read build/neural_network/report.md and before_after.png
+#
+#  The CNN skips stage 5's hand-made features and learns its own filters straight
+#  from the Segmenting pixels. It runs next to the random forest, so every run
+#  compares the two. Switched off until Thursday 08.10 (enabled below).
+#
+#  CI imports this folder as one stage:  - uses: ./6_neural-network
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+name: "6 · Classifying — neural network"
+description: Train a small CNN on the pixels and judge it on the test set.
+
+inputs:
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🎛️  Experiment with this stage's values — change one, ▶ neural_network.py, read the report
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  enabled:
+    description: "true switches the network on (installs TensorFlow, trains, predicts your snap)"
+    default: "false"
+
+  # │ 🏛️ 1943 · McCulloch & Pitts: a neuron as a weighted sum and a threshold.
+  # │    1958 · Frank Rosenblatt's Mark I Perceptron had a 20×20 camera "retina":
+  # │    400 pixels. 1962 · Hubel & Wiesel found cells in a cat's visual cortex
+  # │    that each watch a small patch — a receptive field. 1980 · Kunihiko
+  # │    Fukushima's Neocognitron stacked them. 1989 · Yann LeCun's network read
+  # │    handwritten ZIP codes for the US Postal Service.
+  # │ ⚡ A Conv2D layer slides small filters over the frame: millions of
+  # │    multiply-adds, which is exactly what vector units are built for.
+  # │    On this runner TensorFlow uses oneDNN with AVX2 / AVX-512.
+  # │ 🎮 2012 · AlexNet (Krizhevsky, Sutskever & Hinton) trained on two gaming
+  # │    graphics cards through CUDA, NVIDIA's platform for running general maths
+  # │    on GPUs (released 2007). It won ImageNet by a landslide and started the
+  # │    deep-learning boom. On an NVIDIA GPU, TensorFlow hands every convolution
+  # │    to cuDNN; the same network trains many times faster than on this runner.
+  input_downscale:
+    description: "Average-pool the input first: 2 turns 128×128 into 64×64"
+    default: "2"
+  conv_layers:
+    description: "Number of convolution + max-pooling layers"
+    default: "3"
+  filters:
+    description: "Filters in the first layer; doubles in every deeper layer"
+    default: "16"
+  batch_norm:
+    description: "2015 · Ioffe & Szegedy — keep each layer's inputs in a trainable range"
+    default: "false"
+  head:
+    description: "flatten | gap — global average pooling forgets WHERE things are"
+    default: "flatten"
+  dense_units:
+    description: "Neurons in the dense layer before the answer"
+    default: "64"
+  dropout:
+    description: "2012 · Hinton et al. — randomly silence neurons so none can memorise"
+    default: "0.3"
+
+  # │ 🏛️ 1847 · Augustin-Louis Cauchy: gradient descent — to find the bottom of
+  # │    a valley, keep stepping downhill. 1986 · Rumelhart, Hinton & Williams:
+  # │    backpropagation tells every weight which way is downhill.
+  # │    2014 · Kingma & Ba: Adam, which adapts the step size per weight.
+  learning_rate:
+    description: "Step size downhill: too big overshoots, too small never arrives"
+    default: "0.001"
+  epochs:
+    description: "Passes over the whole training set"
+    default: "40"
+  batch_size:
+    description: "Frames per step"
+    default: "32"
+
+  # │ export
+  # │ 🏛️ 2017 · Google's TensorFlow Lite: the same network, flattened into one
+  # │    file that a phone runs without Python. "quantized" stores every weight
+  # │    as an 8-bit integer instead of a 32-bit float: about 4× smaller.
+  # │ ⚡ On the phone, TFLite hands the maths to its GPU or neural engine
+  # │    through "delegates", the way TensorFlow hands it to cuDNN here.
+  export:
+    description: "none | tflite | tflite_quantized — also write model.tflite and preprocessing.json"
+    default: "none"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  # │ Same promises as the random forest. Out of the box, on 360 synthetic
+  # │ frames, the network lands around 79% — it has to earn its place.
+  gate_min_accuracy:
+    description: "Test accuracy the network must reach before it may ship"
+    default: "0.85"
+  gate_min_class_recall:
+    description: "Recall of the worst class"
+    default: "0.75"
+
+runs:
+  using: composite
+  steps:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🔒 PLUMBING — no need to touch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    - uses: ./.github/actions/stage-setup
+      with:
+        stage: neural_network
+        previous: extracting
+    - name: 🧠 Install TensorFlow
+      if: inputs.enabled == 'true'
+      shell: bash
+      run: pip install -r requirements-cnn.txt
+    - name: 🧠 Neural network
+      shell: bash
+      env:
+        STAGE: neural_network
+        STAGE_VALUES: ${{ toJSON(inputs) }}
+      run: python 6_neural-network/neural_network.py
+    - uses: ./.github/actions/stage-publish
+      if: always()
+      with:
+        stage: neural_network

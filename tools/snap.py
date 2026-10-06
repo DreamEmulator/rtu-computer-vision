@@ -13,7 +13,7 @@ import subprocess
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("url")
-    ap.add_argument("--ref", default="main", help="the branch whose knobs the photo runs through")
+    ap.add_argument("--ref", default="main", help="the branch whose stage values the photo runs through")
     a = ap.parse_args()
     subprocess.run(["gh", "workflow", "run", "pipeline.yml", "--ref", a.ref, "-f", f"snap_url={a.url}"], check=True)
     print("📸 Your snap is on its way. Watch it with:  gh run watch")

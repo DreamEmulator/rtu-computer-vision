@@ -22,4 +22,4 @@ runs:
         if-no-files-found: warn
     - if: always() && steps.upload.outputs.artifact-url != ''
       shell: bash
-      run: echo "📦 [Download this stage's output and preview.png](${{ steps.upload.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"
+      run: echo "📦 [Download this stage's output (report, pictures, images)](${{ steps.upload.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"

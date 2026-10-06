@@ -9,7 +9,7 @@ TensorFlow Lite (renamed *LiteRT* in 2024) runs a trained network on a phone, wi
 ## 🪜 Steps
 
 ### 1 · Switch on the network and the export
-- [ ] In the 🎛️ tinker zone of [`06_neural-networks/classifying_cnn/action.yaml`](../06_neural-networks/classifying_cnn/action.yaml):
+- [ ] In [`6_neural-network/action.yaml`](../6_neural-network/action.yaml):
   ```yaml
     enabled:
       default: "true"
@@ -24,7 +24,7 @@ You get three files in `build/neural_network/`:
 |---|---|
 | `model.tflite` | the network, flattened into one file |
 | `labels.json` | which output is which class |
-| `preprocessing.json` | everything stages 1–4 do to a frame before the network sees it, with every knob |
+| `preprocessing.json` | everything stages 1–4 do to a frame before the network sees it, with every stage value |
 
 ### 2 · Check the export, don't assume it
 - [ ] `tflite agrees with keras %` should be 100, or very close. The stage runs the *file* on every test frame, the way the phone will.
@@ -51,7 +51,7 @@ def ask(frame, what):
     print(f"{what:<40} → {labels[p.argmax()]} ({p.max():.0%})")
 
 ask(cv2.imread("build/segmenting/images/snap.png", cv2.IMREAD_GRAYSCALE), "the snap after stages 1–4")
-raw = cv2.imread("snaps/default_drip.jpg", cv2.IMREAD_GRAYSCALE)
+raw = cv2.imread("images_for_analyzing/default_drip.jpg", cv2.IMREAD_GRAYSCALE)
 ask(cv2.resize(raw, (128, 128), interpolation=cv2.INTER_AREA), "the raw photo, only resized")
 ```
 
@@ -69,7 +69,7 @@ The same model and the same photo give opposite answers, and both times it's sur
 
 | | How | Price |
 |---|---|---|
-| **A** · port it | rebuild stages 1–4 in the app. OpenCV runs on Android and iOS, and each stage's code (the `recipe.py` for Segmenting) is your spec, one `cv2` call at a time | work for the app developer, and two copies that must stay identical |
+| **A** · port it | rebuild stages 1–4 in the app. OpenCV runs on Android and iOS, and each stage's `.py` file (named in `preprocessing.json`) is your spec, one `cv2` call at a time | work for the app developer, and two copies that must stay identical |
 | **B** · bake it in | move preprocessing *into* the network as layers: resizing and rescaling are easy, adaptive thresholds and contours aren't | you may have to simplify stages 1–4 first |
 | **C** · simplify it | `pass_on: "original"` in Segmenting, `method: "none"` in Cleaning and Improving, then measure what accuracy that costs | maybe a few % of accuracy, for an app that's far easier to build |
 

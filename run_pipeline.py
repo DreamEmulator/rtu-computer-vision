@@ -1,4 +1,4 @@
-"""Run the pipeline locally — the same stages CI runs, in the same order, with the knobs from the action.yaml files.
+"""Run the pipeline locally — the same stages CI runs, in the same order, with the stage values from every action.yaml.
 
     python run_pipeline.py                              # everything
     python run_pipeline.py --snap ~/Desktop/drip.jpg    # Step 0: send your own photo through every stage
@@ -8,16 +8,11 @@
 from __future__ import annotations
 
 import argparse
-import importlib
 import os
 import time
 
 from stages.registry import BY_KEY, ORDER
 
-MODULES = {"digital_data": "stages.s1_digital_data", "cleaning": "stages.s2_cleaning", "improving": "stages.s3_improving",
-           "segmenting": "stages.s4_segmenting", "extracting": "stages.s5_extracting",
-           "random_forest": "stages.s6_classifying", "neural_network": "stages.s6_classifying",
-           "demo_day": "stages.s7_demo_day"}
 
 
 def _index(which: str | int | None, default: int, last: bool = False) -> int:
@@ -35,10 +30,10 @@ def run(start=None, stop=None, keep_going: bool = False) -> bool:
     check()  # a friendly message instead of a traceback when this Python lacks a package
     from stages import webhook
     from stages.common import run_stage
+    from stages.stage import load_code
     ok = True
     for key in ORDER[_index(start, 0):_index(stop, len(ORDER) - 1, last=True) + 1]:
-        module = importlib.import_module(MODULES[key])
-        main = (lambda k=key: module.main(k)) if MODULES[key].endswith("classifying") else module.main
+        main = load_code(key).main                             # <n>_<stage>/<stage>.py, the file CI runs
         t0 = time.time()
         webhook.started(key)  # in CI the composite action sends this before installing anything
         try:

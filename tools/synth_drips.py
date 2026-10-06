@@ -10,7 +10,7 @@ Classes
     no_drop    no falling drop                          → infusion stopped / blocked
     low_fluid  chamber nearly empty                     → risk of air in the line
 
-Run standalone:  python -m tools.synth_drips --out data/raw --per-class 150
+Run standalone:  python -m tools.synth_drips --out images_for_training --per-class 150
 """
 from __future__ import annotations
 
@@ -144,7 +144,7 @@ def generate(out: Path, per_class: int = 120, seed: int = 42, size: int = 256, q
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default="data/synthetic")
+    ap.add_argument("--out", default="build/synthetic")
     ap.add_argument("--per-class", type=int, default=120)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--size", type=int, default=256)

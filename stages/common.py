@@ -1,7 +1,7 @@
-"""Shared plumbing for every stage: knobs, stage I/O, the snap, previews, gates and reporting.
+"""Shared plumbing for every stage: stage values, stage I/O, the snap, previews, gates and reporting.
 
-You rarely need to edit this file. The interesting code lives in the stage modules, and the
-interesting *decisions* live in the TINKER ZONE of each <topic>/<stage>_<action>/action.yaml.
+You rarely need to edit this file. The interesting code lives in every stage folder's Python file, and
+the interesting *decisions* in the values of every stage folder's action.yaml.
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ BUILD = ROOT / "build"
 SNAP = "snap"  # split name of the photo from Step 0; it travels through every stage but never trains or tests
 
 
-# ---------------------------------------------------------------- knobs
+# ---------------------------------------------------------------- stage values
 
 def action_file(key: str) -> Path:
     d = ROOT / BY_KEY[key].action_path
@@ -49,39 +49,22 @@ def parse_value(v):
         return v
 
 
-def knobs_of(key: str) -> dict:
+def stage_values_of(key: str) -> dict:
     spec = yaml.safe_load(action_file(key).read_text(encoding="utf-8")) or {}
     return {name: parse_value(str(i.get("default", ""))) for name, i in (spec.get("inputs") or {}).items()}
 
 
-def load_config() -> dict:
-    """{stage key: {knob: value}} from the defaults in every action.yaml.
+def load_stage_values() -> dict:
+    """{stage key: {name: value}} from the defaults in every stage's action.yaml.
 
-    In CI each action also passes its actual inputs as CV_KNOBS (JSON) for its own stage, which wins,
+    In CI each action also passes its actual inputs as STAGE_VALUES (JSON) for its own STAGE, which win,
     so a value given with `with:` in pipeline.yml is what the stage really uses.
     """
-    cfg = {s.key: knobs_of(s.key) for s in STAGES}
-    stage, knobs = os.environ.get("CV_STAGE"), os.environ.get("CV_KNOBS")
-    if stage in cfg and knobs:
-        cfg[stage].update({k: parse_value(v) for k, v in json.loads(knobs).items()})
-    return cfg
-
-
-def load_recipe(key: str):
-    """The recipe.py next to a stage's action.yaml: the maths CI runs, and the sandboxes call too.
-
-    Topic folders start with a digit, so they can't be imported as packages: load the file by its path.
-    """
-    name = f"recipe_{key}"
-    if name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(name, ROOT / BY_KEY[key].action_path / "recipe.py")
-        sys.modules[name] = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(sys.modules[name])
-        except BaseException:
-            del sys.modules[name]                       # don't keep a half-loaded recipe around
-            raise
-    return sys.modules[name]
+    all_values = {s.key: stage_values_of(s.key) for s in STAGES}
+    stage, given = os.environ.get("STAGE"), os.environ.get("STAGE_VALUES")
+    if stage in all_values and given:
+        all_values[stage].update({k: parse_value(v) for k, v in json.loads(given).items()})
+    return all_values
 
 
 def stage_dir(key: str) -> Path:
@@ -229,7 +212,7 @@ def sample_indices(rows: list[dict], per_class: int = 3) -> list[int]:
 def contact_sheet(path: Path, rows: list[dict], strips: list[tuple[str, list[np.ndarray], str]],
                   title: str, per_class: int = 3) -> None:
     """strips = [(row label, images aligned with rows, colour space), ...]. The snap gets its own column."""
-    from matplotlib.figure import Figure  # no pyplot: headless in CI and doesn't disturb notebooks
+    from matplotlib.figure import Figure  # no pyplot: headless in CI
 
     idx = sample_indices(rows, per_class)
     snap = next((i for i, r in enumerate(rows) if r["split"] == SNAP), None)
@@ -283,8 +266,8 @@ class StageReport:
     exits with code 1: the job turns red and the stages after it don't run, like a failing unit test.
     """
 
-    def __init__(self, key: str, cfg: dict):
-        self.key, self.cfg, self.stage = key, cfg, BY_KEY[key]
+    def __init__(self, key: str, all_values: dict):
+        self.key, self.all_values, self.stage = key, all_values, BY_KEY[key]
         self.t0 = time.time()
         self.metrics: dict = {}
         self.gates: list[dict] = []
@@ -293,10 +276,20 @@ class StageReport:
         self.snap_metrics: dict = {}
         self.snap_images: dict = {}
         self.status_override: str | None = None
+        self.why: dict = {}            # metric → (light, one sentence on what it tells you)
+        self.tips: list[str] = []
+        self.since: list[str] = []     # what changed since your last run (filled in by finish)
 
-    def metric(self, name: str, value):
+    def metric(self, name: str, value, why: str | None = None, level: str | None = None):
+        """level: good | check | bad | info → 🟢 🟠 🔴 ℹ️ in the report. why: what the number tells you."""
         self.metrics[name] = _plain(value)
+        if why or level:
+            self.why[name] = (level or "info", why or "")
         return self.metrics[name]
+
+    def tip(self, text: str):
+        """💡 Something to try next, shown at the end of the report."""
+        self.tips.append(text)
 
     def perf(self, name: str, value):
         self.performance[name] = _plain(value)
@@ -337,30 +330,38 @@ class StageReport:
         repo = os.environ.get("GITHUB_REPOSITORY")
         ref = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME") or "main"
         gh = f"https://github.com/{repo}/blob/{ref}" if repo else ""
-        parts = [f"🎛️ [Tinker zone]({gh}/{s.action_path}/action.yaml)" if repo else f"🎛️ `{s.action_path}/action.yaml`",
-                 f"📋 [Todo]({gh}/{s.topic}/{s.todo})" if repo else f"📋 `{s.topic}/{s.todo}`"]
-        if s.notebook:
-            nb = f"{s.topic}/{s.notebook}"
-            parts.append(f"📓 [Notebook in Colab](https://colab.research.google.com/github/{repo}/blob/{ref}/{nb})"
-                         if repo else f"📓 `{nb}`")
-        return " · ".join(parts)
+        files = [("📖", "README", "README.md"), ("🎛️", "Values", "action.yaml"), ("🐍", "Code", s.code)]
+        return " · ".join(f"{e} [{t}]({gh}/{s.folder}/{f})" if repo else f"{e} `{s.folder}/{f}`" for e, t, f in files)
 
     def markdown(self) -> str:
+        """Most important first: may it pass on, what changed, the numbers, what to try. The full values last."""
         s = self.stage
         out = [f"## {s.emoji} {s.n} · {s.title}  ·  📅 {s.lecture}", "", f"> *{s.question}*", ""]
         if self.status == "off":
-            out += ["⏸️ Switched off — flip `enabled` to `true` in the tinker zone.", ""]
-        if self.metrics:
+            out += ["⏸️ Switched off: set `enabled` to `\"true\"` in the values (action.yaml).", ""]
+        if self.gates:
+            verdict = "✅ Ready to pass on" if self.passed else "❌ Not ready to pass on"
+            out += [f"**🚦 {verdict}:** " + " · ".join(f"{'✅' if g['ok'] else '❌'} {g['name']} {_fmt(g['value'])} (must be {g['rule']})"
+                                                       for g in self.gates), ""]
+        if self.since:
+            out += ["**🔁 Since your last run:** " + " · ".join(self.since), ""]
+        if self.metrics and self.why:
+            out += ["| | Metric | Value | What it tells you |", "|---|---|---|---|"]
+            out += [f"| {LIGHTS[self.why[k][0]] if k in self.why else ''} | {k} | {_fmt(v)} | {self.why[k][1] if k in self.why else ''} |"
+                    for k, v in self.metrics.items()] + ["", "🟢 looks right · 🟠 worth a look · 🔴 something is off · ℹ️ for your information", ""]
+        elif self.metrics:
             out += ["| Metric | Value |", "|---|---|"] + [f"| {k} | {_fmt(v)} |" for k, v in self.metrics.items()] + [""]
-        if self.performance:
-            out += ["**⚡ Performance** " + " · ".join(f"{k}: {_fmt(v)}" for k, v in self.performance.items()), ""]
         if self.snap_metrics:
             out += ["**📸 Your snap** " + " · ".join(f"{k}: {_fmt(v)}" for k, v in self.snap_metrics.items()), ""]
-        if self.gates:
-            out += ["**🚦 Quality gates**", "", "| Gate | Value | Rule | |", "|---|---|---|---|"]
-            out += [f"| {g['name']} | {_fmt(g['value'])} | {g['rule']} | {'✅' if g['ok'] else '❌'} |" for g in self.gates]
-            out.append("")
+        if self.tips:
+            out += ["**💡 What to try next**", "", *[f"- {t}" for t in self.tips], ""]
+        if self.performance:
+            out += ["**⚡ Performance** " + " · ".join(f"{k}: {_fmt(v)}" for k, v in self.performance.items()), ""]
         out += [f"- {t}" for t in self.notes] + ([""] if self.notes else [])
+        stage_values = {k: v for k, v in self.all_values.get(self.key, {}).items() if not k.startswith("gate_")}
+        if stage_values:
+            out += [f"<details><summary>🎛️ All {len(stage_values)} stage values this run used (<code>{s.action_path}/action.yaml</code>)</summary>", "",
+                    "| Stage value | |", "|---|---|", *[f"| `{k}` | `{_fmt(v)}` |" for k, v in stage_values.items()], "", "</details>", ""]
         out.append(self._links())
         return "\n".join(out) + "\n"
 
@@ -370,9 +371,11 @@ class StageReport:
         d.mkdir(parents=True, exist_ok=True)
         record = {"stage": self.key, "n": self.stage.n, "title": self.stage.title, "status": self.status,
                   "passed": self.status in ("passed", "off"), "duration_s": duration,
-                  "knobs": _plain(self.cfg.get(self.key, {})), "metrics": self.metrics, "performance": self.performance,
+                  "stage_values": _plain(self.all_values.get(self.key, {})), "metrics": self.metrics, "performance": self.performance,
                   "gates": self.gates, "notes": self.notes, "snap": self.snap_metrics or None}
         (d / "metrics.json").write_text(json.dumps(record, indent=2, default=str))
+        self.since = self._compare_with_last_run(record)
+        (d / "report.md").write_text(self.markdown(), encoding="utf-8")
 
         print(f"\n{self.stage.emoji}  {self.stage.n} · {self.stage.title}   [{self.status}, {duration}s]")
         for k, v in {**self.metrics, **self.performance}.items():
@@ -388,16 +391,38 @@ class StageReport:
 
         webhook.emit("stage.finished", {
             "stage": webhook.stage_info(self.key), "status": self.status, "duration_s": duration,
-            "knobs": record["knobs"], "metrics": self.metrics, "performance": self.performance, "gates": self.gates,
+            "stage_values": record["stage_values"], "metrics": self.metrics, "performance": self.performance, "gates": self.gates,
             "snap": {"metrics": self.snap_metrics, "images": self.snap_images} if (self.snap_metrics or self.snap_images) else None,
             "error": None})
 
         for g in self.gates:
             if not g["ok"]:
                 print(f"::error title={self.stage.title} gate failed: {g['name']}::{_fmt(g['value'])} is not {g['rule']}"
-                      f" — tune the TINKER ZONE in {self.stage.action_path}/action.yaml")
+                      f" — change a value in {self.stage.action_path}/action.yaml")
         if self.status == "failed":
             sys.exit(1)
+
+
+    def _compare_with_last_run(self, record: dict) -> list[str]:
+        """Keep every run's values and numbers in build/history/<stage>/, and say what changed since the last one."""
+        history = BUILD / "history" / self.key
+        history.mkdir(parents=True, exist_ok=True)
+        runs = sorted(history.glob("*.json"))
+        (history / f"{time.strftime('%Y%m%d-%H%M%S')}.json").write_text(json.dumps(record, indent=2, default=str))
+        if not runs:
+            return []
+        last = json.loads(runs[-1].read_text())
+        before = last.get("stage_values", last.get("knobs", {}))          # runs saved before the rename said "knobs"
+        changes = [f"`{k}` {_fmt(before.get(k))} → **{_fmt(v)}**" for k, v in record["stage_values"].items()
+                   if not k.startswith("gate_") and before.get(k) != v]
+        for k, v in record["metrics"].items():
+            old = last["metrics"].get(k)
+            if isinstance(v, (int, float)) and isinstance(old, (int, float)) and not isinstance(v, bool) and old != v:
+                changes.append(f"{k} {_fmt(old)} → **{_fmt(v)}** ({'+' if v > old else ''}{_fmt(v - old)})")
+        return changes or ["the same values and the same numbers as last time"]
+
+
+LIGHTS = {"good": "🟢", "check": "🟠", "bad": "🔴", "info": "ℹ️"}
 
 
 def run_stage(key: str, main) -> None:

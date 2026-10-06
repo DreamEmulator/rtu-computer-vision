@@ -1,0 +1,118 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🎛️ The values · 📷 Stage 1 · Digital Data
+#  Lecture: Introduction to Image Processing · Tue 22.09
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  README.md       why this stage exists, and what to try
+#  action.yaml     you are here: this stage's values, digital_data.py runs with them
+#  digital_data.py the code: ▶ it, read build/digital_data/report.md and before_after.png
+#
+#  Every frame (and your snap from Step 0) becomes a grid of numbers with the
+#  same size, orientation and colour space. The train/test split is locked here,
+#  on day one, and never touched again.
+#
+#  CI imports this folder as one stage:  - uses: ./1_digital-data
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+name: "1 · Digital Data — prepare"
+description: Collect, split and normalise every frame, plus the snap from Step 0.
+
+inputs:
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🎛️  Experiment with this stage's values — change one, ▶ digital_data.py, read the report
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  # │ Where the frames come from. "synthetic" draws a day-zero dataset of drip
+  # │ chambers; "folder" reads your own images from images_for_training/<class>/.
+  source:
+    description: "synthetic | folder"
+    default: "synthetic"
+  folder:
+    description: "Folder with one sub-folder per class (used when source is folder)"
+    default: "images_for_training"
+  synthetic_per_class:
+    description: "Frames per class in the synthetic dataset"
+    default: "120"
+
+  # │ 🏛️ 1974 · Mervyn Stone — cross-validation: never grade a model on data it
+  # │    has seen. We lock a test set on day one; every later stage respects it.
+  test_size:
+    description: "Share of frames locked away as the test set"
+    default: "0.25"
+  seed:
+    description: "Random seed — same seed, same split, same results"
+    default: "42"
+  # │ Frames from one video are near-copies. If one lands in train and its
+  # │ neighbour in test, the model is graded on what it has already seen: a
+  # │ leak, and an accuracy that's too good to be true. "prefix" keeps every
+  # │ frame of a video on one side (tools/frames_from_video.py names them so).
+  group_by:
+    description: "file (every frame on its own) | prefix (cow-pasture_0012.jpg → cow-pasture stays together)"
+    default: "file"
+
+  # │ Rotations by 90° need no maths at all: they are a transpose plus a flip,
+  # │ so cv2.rotate only shuffles memory.
+  rotate:
+    description: "0 | 90 | 180 | 270 — fix a sideways-mounted camera"
+    default: "0"
+
+  # │ Cropping a NumPy array is a view: not a single pixel gets copied.
+  crop:
+    description: "null, or [x0, y0, x1, y1] as fractions, e.g. [0.2, 0.0, 0.8, 1.0]"
+    default: "null"
+
+  # │ 🏛️ 1928 · Harry Nyquist, 1949 · Claude Shannon — to keep a detail you must
+  # │    sample it at least twice per cycle. A 6-pixel drop shrunk 8× is gone.
+  # │ 🏛️ 1795 · Lagrange — interpolation: guess the value between known points.
+  # │ ⚡ cv2.resize with "area" averages whole blocks of pixels (best for
+  # │    shrinking) using SIMD: one instruction handles 16–32 pixels on AVX2.
+  # │ 🎮 A GPU's texture units do bilinear interpolation in hardware, for free:
+  # │    the same silicon that scales textures in video games (cv2.cuda.resize).
+  size:
+    description: "[width, height] every frame is resized to"
+    default: "[128, 128]"
+  interpolation:
+    description: "nearest | linear | area | cubic"
+    default: "area"
+
+  # │ 🏛️ 1802 · Thomas Young, 1850s · Helmholtz & Maxwell — three kinds of cone
+  # │    in the eye, so three numbers per colour. 1931 · CIE standard observer;
+  # │    1976 · CIELAB (distances that match what we perceive); 1978 · Alvy Ray
+  # │    Smith's HSV (hue, saturation, value) for paint programs.
+  # │ 🏛️ 1976 · Bryce Bayer (Kodak) — every camera pixel sees only red, green OR
+  # │    blue; the other two are interpolated before the file ever reaches us.
+  # │ ⚡ cv2.cvtColor: lookup tables and SIMD, one pass over the image.
+  color_space:
+    description: "gray | bgr | hsv | lab | ycrcb"
+    default: "gray"
+  channel:
+    description: "null, or 0 | 1 | 2 to keep one channel of the colour space"
+    default: "null"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  gate_min_images_per_class:
+    description: "A class with fewer frames can't be learned or tested"
+    default: "30"
+  gate_max_unreadable:
+    description: "Broken files allowed in the dataset"
+    default: "0"
+
+runs:
+  using: composite
+  steps:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🔒 PLUMBING — no need to touch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    - uses: ./.github/actions/stage-setup
+      with:
+        stage: digital_data
+    - name: 📷 Digital Data
+      shell: bash
+      env:
+        STAGE: digital_data
+        STAGE_VALUES: ${{ toJSON(inputs) }}
+      run: python 1_digital-data/digital_data.py
+    - uses: ./.github/actions/stage-publish
+      if: always()
+      with:
+        stage: digital_data

@@ -1,0 +1,108 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🎛️ The values · 🌳 Stage 6 · Classifying · Random Forest
+#  Lecture: Image Classification with Random Forests · Tue 06.10
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  README.md       why this stage exists, and what to try
+#  action.yaml     you are here: this stage's values, random_forest.py runs with them
+#  random_forest.py the code: ▶ it, read build/random_forest/report.md and before_after.png
+#
+#  A model learns from the training features and is graded ONLY on the locked
+#  test set. Then it looks at your snap and makes a call: drop, no_drop or
+#  low_fluid.
+#
+#  CI imports this folder as one stage:  - uses: ./6_random-forest
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+name: "6 · Classifying — random forest"
+description: Train a random forest (or SVM, or kNN) on the features and judge it on the test set.
+
+inputs:
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🎛️  Experiment with this stage's values — change one, ▶ random_forest.py, read the report
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  # │ random_forest
+  # │ 🏛️ 1907 · Francis Galton asked 787 fairgoers to guess the weight of an ox;
+  # │    the median guess was within 1% of the truth. Many rough opinions beat
+  # │    one expert. 1984 · Breiman, Friedman, Olshen & Stone: decision trees
+  # │    (CART). 1979 · Bradley Efron: the bootstrap. 1995 · Tin Kam Ho and
+  # │    2001 · Leo Breiman: grow many trees on random samples, let them vote.
+  # │ ⚡ scikit-learn grows every tree in compiled Cython, and n_jobs=-1 puts
+  # │    each CPU core of this runner to work on its own trees at the same time.
+  # │ 🎮 On an NVIDIA GPU: RAPIDS cuML's RandomForestClassifier, CUDA underneath.
+  # │
+  # │ svm  🏛️ 1995 · Corinna Cortes & Vladimir Vapnik — the widest possible street
+  # │      between classes; the kernel trick bends that street through curved space.
+  # │ knn  🏛️ 1951 · Evelyn Fix & Joseph Hodges — you are what your neighbours are.
+  # │      Both measure distances, so they care about scaling in stage 5. Trees don't.
+  model:
+    description: "random_forest | svm | knn"
+    default: "random_forest"
+  n_estimators:
+    description: "Number of trees in the forest"
+    default: "200"
+  max_features:
+    description: "Features each split may look at: sqrt | log2 | a share like 0.5 | null (all: every tree alike)"
+    default: "sqrt"
+  max_depth:
+    description: "Maximum depth of each tree (null = grow until pure)"
+    default: "null"
+  min_samples_leaf:
+    description: "Smallest group of frames a leaf may hold"
+    default: "1"
+  class_weight:
+    description: "null | balanced — balanced weighs rare classes more"
+    default: "null"
+  svm_c:
+    description: "SVM: how hard to punish mistakes"
+    default: "1.0"
+  svm_kernel:
+    description: "SVM: linear | rbf | poly"
+    default: "rbf"
+  svm_gamma:
+    description: "SVM: reach of one training frame (scale | auto | a number)"
+    default: "scale"
+  knn_neighbors:
+    description: "kNN: how many neighbours vote"
+    default: "5"
+
+  # │ 🏛️ 1974 · Mervyn Stone: cross-validation — split the training set in k folds,
+  # │    train on k−1, grade on the one left out, rotate. Augmented copies stay in
+  # │    the same fold as their original, so nothing leaks.
+  cv_folds:
+    description: "Folds for cross-validation on the training split (0 = skip)"
+    default: "5"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
+  # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  # │ 🏛️ 1904 · Karl Pearson's contingency table = our confusion matrix.
+  # │    1950s · researchers testing the first machine searches of library
+  # │    documents measured precision and recall. Recall of low_fluid: of all the chambers that
+  # │    were really running dry, how many did we catch? That's patient safety.
+  gate_min_accuracy:
+    description: "Test accuracy the model must reach before it may ship"
+    default: "0.85"
+  gate_min_class_recall:
+    description: "Recall of the worst class"
+    default: "0.75"
+
+runs:
+  using: composite
+  steps:
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🔒 PLUMBING — no need to touch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    - uses: ./.github/actions/stage-setup
+      with:
+        stage: random_forest
+        previous: extracting
+    - name: 🌳 Random forest
+      shell: bash
+      env:
+        STAGE: random_forest
+        STAGE_VALUES: ${{ toJSON(inputs) }}
+      run: python 6_random-forest/random_forest.py
+    - uses: ./.github/actions/stage-publish
+      if: always()
+      with:
+        stage: random_forest
