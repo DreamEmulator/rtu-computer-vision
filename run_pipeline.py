@@ -1,4 +1,4 @@
-"""Run the pipeline locally — the same stages CI runs, in the same order, with the knobs from the action.yaml files.
+"""Run the pipeline locally — the same stages CI runs, in the same order, with the stage values from every action.yaml.
 
     python run_pipeline.py                              # everything
     python run_pipeline.py --snap ~/Desktop/drip.jpg    # Step 0: send your own photo through every stage

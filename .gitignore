@@ -1,8 +1,8 @@
 build/
-data/synthetic/
 __pycache__/
 *.pyc
 .venv/
 .DS_Store
 webhook-events.jsonl
 .idea
+.run/

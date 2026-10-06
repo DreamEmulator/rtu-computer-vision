@@ -3,7 +3,7 @@
 #  Lecture: Feature Extraction and Data Preparation · Thu 01.10
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  README.md       why this stage exists, and what to try
-#  action.yaml     you are here: the values extracting.py runs with
+#  action.yaml     you are here: this stage's values, extracting.py runs with them
 #  extracting.py   the code: ▶ it, read build/extracting/report.md and before_after.png
 #
 #  16 384 pixels in, a few thousand meaningful numbers out. Training frames get
@@ -16,7 +16,7 @@ description: Augment the training frames and turn every frame into a feature vec
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  #    🎛️  TINKER ZONE — the values: change one, ▶ extracting.py, read the report
+  #    🎛️  Experiment with this stage's values — change one, ▶ extracting.py, read the report
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   features:
     description: "Any of: hog | lbp | histogram | pixels"
@@ -95,7 +95,7 @@ inputs:
     description: "Random brightness change up to ± this fraction"
     default: "0.15"
 
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
@@ -117,8 +117,8 @@ runs:
     - name: 🧬 Extracting
       shell: bash
       env:
-        CV_STAGE: extracting
-        CV_KNOBS: ${{ toJSON(inputs) }}
+        STAGE: extracting
+        STAGE_VALUES: ${{ toJSON(inputs) }}
       run: python 5_extracting/extracting.py
     - uses: ./.github/actions/stage-publish
       if: always()

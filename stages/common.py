@@ -1,4 +1,4 @@
-"""Shared plumbing for every stage: knobs, stage I/O, the snap, previews, gates and reporting.
+"""Shared plumbing for every stage: stage values, stage I/O, the snap, previews, gates and reporting.
 
 You rarely need to edit this file. The interesting code lives in every stage folder's Python file, and
 the interesting *decisions* in the values of every stage folder's action.yaml.
@@ -29,7 +29,7 @@ BUILD = ROOT / "build"
 SNAP = "snap"  # split name of the photo from Step 0; it travels through every stage but never trains or tests
 
 
-# ---------------------------------------------------------------- knobs
+# ---------------------------------------------------------------- stage values
 
 def action_file(key: str) -> Path:
     d = ROOT / BY_KEY[key].action_path
@@ -49,22 +49,22 @@ def parse_value(v):
         return v
 
 
-def knobs_of(key: str) -> dict:
+def stage_values_of(key: str) -> dict:
     spec = yaml.safe_load(action_file(key).read_text(encoding="utf-8")) or {}
     return {name: parse_value(str(i.get("default", ""))) for name, i in (spec.get("inputs") or {}).items()}
 
 
-def load_config() -> dict:
-    """{stage key: {knob: value}} from the defaults in every action.yaml.
+def load_stage_values() -> dict:
+    """{stage key: {name: value}} from the defaults in every stage's action.yaml.
 
-    In CI each action also passes its actual inputs as CV_KNOBS (JSON) for its own stage, which wins,
+    In CI each action also passes its actual inputs as STAGE_VALUES (JSON) for its own STAGE, which win,
     so a value given with `with:` in pipeline.yml is what the stage really uses.
     """
-    cfg = {s.key: knobs_of(s.key) for s in STAGES}
-    stage, knobs = os.environ.get("CV_STAGE"), os.environ.get("CV_KNOBS")
-    if stage in cfg and knobs:
-        cfg[stage].update({k: parse_value(v) for k, v in json.loads(knobs).items()})
-    return cfg
+    all_values = {s.key: stage_values_of(s.key) for s in STAGES}
+    stage, given = os.environ.get("STAGE"), os.environ.get("STAGE_VALUES")
+    if stage in all_values and given:
+        all_values[stage].update({k: parse_value(v) for k, v in json.loads(given).items()})
+    return all_values
 
 
 def stage_dir(key: str) -> Path:
@@ -266,8 +266,8 @@ class StageReport:
     exits with code 1: the job turns red and the stages after it don't run, like a failing unit test.
     """
 
-    def __init__(self, key: str, cfg: dict):
-        self.key, self.cfg, self.stage = key, cfg, BY_KEY[key]
+    def __init__(self, key: str, all_values: dict):
+        self.key, self.all_values, self.stage = key, all_values, BY_KEY[key]
         self.t0 = time.time()
         self.metrics: dict = {}
         self.gates: list[dict] = []
@@ -358,10 +358,10 @@ class StageReport:
         if self.performance:
             out += ["**⚡ Performance** " + " · ".join(f"{k}: {_fmt(v)}" for k, v in self.performance.items()), ""]
         out += [f"- {t}" for t in self.notes] + ([""] if self.notes else [])
-        knobs = {k: v for k, v in self.cfg.get(self.key, {}).items() if not k.startswith("gate_")}
-        if knobs:
-            out += [f"<details><summary>🎛️ All {len(knobs)} values this run used (<code>{s.action_path}/action.yaml</code>)</summary>", "",
-                    "| Value | |", "|---|---|", *[f"| `{k}` | `{_fmt(v)}` |" for k, v in knobs.items()], "", "</details>", ""]
+        stage_values = {k: v for k, v in self.all_values.get(self.key, {}).items() if not k.startswith("gate_")}
+        if stage_values:
+            out += [f"<details><summary>🎛️ All {len(stage_values)} stage values this run used (<code>{s.action_path}/action.yaml</code>)</summary>", "",
+                    "| Stage value | |", "|---|---|", *[f"| `{k}` | `{_fmt(v)}` |" for k, v in stage_values.items()], "", "</details>", ""]
         out.append(self._links())
         return "\n".join(out) + "\n"
 
@@ -371,7 +371,7 @@ class StageReport:
         d.mkdir(parents=True, exist_ok=True)
         record = {"stage": self.key, "n": self.stage.n, "title": self.stage.title, "status": self.status,
                   "passed": self.status in ("passed", "off"), "duration_s": duration,
-                  "knobs": _plain(self.cfg.get(self.key, {})), "metrics": self.metrics, "performance": self.performance,
+                  "stage_values": _plain(self.all_values.get(self.key, {})), "metrics": self.metrics, "performance": self.performance,
                   "gates": self.gates, "notes": self.notes, "snap": self.snap_metrics or None}
         (d / "metrics.json").write_text(json.dumps(record, indent=2, default=str))
         self.since = self._compare_with_last_run(record)
@@ -391,7 +391,7 @@ class StageReport:
 
         webhook.emit("stage.finished", {
             "stage": webhook.stage_info(self.key), "status": self.status, "duration_s": duration,
-            "knobs": record["knobs"], "metrics": self.metrics, "performance": self.performance, "gates": self.gates,
+            "stage_values": record["stage_values"], "metrics": self.metrics, "performance": self.performance, "gates": self.gates,
             "snap": {"metrics": self.snap_metrics, "images": self.snap_images} if (self.snap_metrics or self.snap_images) else None,
             "error": None})
 
@@ -412,8 +412,9 @@ class StageReport:
         if not runs:
             return []
         last = json.loads(runs[-1].read_text())
-        changes = [f"`{k}` {_fmt(last['knobs'].get(k))} → **{_fmt(v)}**" for k, v in record["knobs"].items()
-                   if not k.startswith("gate_") and last["knobs"].get(k) != v]
+        before = last.get("stage_values", last.get("knobs", {}))          # runs saved before the rename said "knobs"
+        changes = [f"`{k}` {_fmt(before.get(k))} → **{_fmt(v)}**" for k, v in record["stage_values"].items()
+                   if not k.startswith("gate_") and before.get(k) != v]
         for k, v in record["metrics"].items():
             old = last["metrics"].get(k)
             if isinstance(v, (int, float)) and isinstance(old, (int, float)) and not isinstance(v, bool) and old != v:

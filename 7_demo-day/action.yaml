@@ -3,7 +3,7 @@
 #  Lecture: Course Summary · Tue 13.10
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  README.md       why this stage exists, and what to try
-#  action.yaml     you are here: the values demo_day.py runs with
+#  action.yaml     you are here: this stage's values, demo_day.py runs with them
 #  demo_day.py     the code: ▶ it, read build/demo_day/report.md and before_after.png
 #
 #  Collects every stage's metrics, gates, previews and your snap's journey into
@@ -17,7 +17,7 @@ description: Build the Demo Day report from every stage that ran.
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  #    🎛️  TINKER ZONE — the values: it's your startup, name it and pitch it
+  #    🎛️  Experiment with this stage's values — it's your startup: name it, pitch it
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   project_name:
     description: "Your startup's name, the title of the report"
@@ -25,7 +25,7 @@ inputs:
   pitch:
     description: "One sentence an investor remembers"
     default: "A clip-on camera that tells the nurse when an IV drip stops or runs dry."
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 runs:
   using: composite
@@ -38,8 +38,8 @@ runs:
     - name: 🎤 Demo Day
       shell: bash
       env:
-        CV_STAGE: demo_day
-        CV_KNOBS: ${{ toJSON(inputs) }}
+        STAGE: demo_day
+        STAGE_VALUES: ${{ toJSON(inputs) }}
       run: python 7_demo-day/demo_day.py
     - uses: ./.github/actions/stage-publish
       if: always()

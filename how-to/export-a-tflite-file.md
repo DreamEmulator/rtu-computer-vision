@@ -24,7 +24,7 @@ You get three files in `build/neural_network/`:
 |---|---|
 | `model.tflite` | the network, flattened into one file |
 | `labels.json` | which output is which class |
-| `preprocessing.json` | everything stages 1–4 do to a frame before the network sees it, with every knob |
+| `preprocessing.json` | everything stages 1–4 do to a frame before the network sees it, with every stage value |
 
 ### 2 · Check the export, don't assume it
 - [ ] `tflite agrees with keras %` should be 100, or very close. The stage runs the *file* on every test frame, the way the phone will.
@@ -51,7 +51,7 @@ def ask(frame, what):
     print(f"{what:<40} → {labels[p.argmax()]} ({p.max():.0%})")
 
 ask(cv2.imread("build/segmenting/images/snap.png", cv2.IMREAD_GRAYSCALE), "the snap after stages 1–4")
-raw = cv2.imread("snaps/default_drip.jpg", cv2.IMREAD_GRAYSCALE)
+raw = cv2.imread("images_for_analyzing/default_drip.jpg", cv2.IMREAD_GRAYSCALE)
 ask(cv2.resize(raw, (128, 128), interpolation=cv2.INTER_AREA), "the raw photo, only resized")
 ```
 

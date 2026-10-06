@@ -34,7 +34,7 @@ Our numbers on the synthetic day-zero data, on a laptop (yours will differ, and 
 | 🌳 random forest | **0.98** | 0.93 drop | 0.90 | 1.5 | 0.32 | **363** |
 | 📏 SVM | 0.94 | 0.87 drop | 0.86 | 2.1 | 0.38 | 4114 |
 | 👥 kNN | 0.79 | 0.43 drop | 0.69 | **0.13** | **0.07** | 3555 |
-| 🧠 CNN, default knobs | 0.78 | 0.57 drop | — | 13 | 1.3 | 3406 · 288 as quantized tflite |
+| 🧠 CNN, default values | 0.78 | 0.57 drop | — | 13 | 1.3 | 3406 · 288 as quantized tflite |
 
 ### 3 · Decide, and write it down
 - [ ] One sentence: *"We ship ___ because ___, even though ___."*

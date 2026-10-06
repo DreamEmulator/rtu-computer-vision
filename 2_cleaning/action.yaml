@@ -3,7 +3,7 @@
 #  Lecture: Image Preprocessing Methods · Thu 24.09
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  README.md       why this stage exists, and what to try
-#  action.yaml     you are here: the values cleaning.py runs with
+#  action.yaml     you are here: this stage's values, cleaning.py runs with them
 #  cleaning.py     the code: ▶ it, read build/cleaning/report.md and before_after.png
 #
 #  Every frame goes through a denoising filter: each pixel is replaced by a
@@ -17,7 +17,7 @@ description: Remove sensor noise and dead pixels from every frame.
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  #    🎛️  TINKER ZONE — the values: change one, ▶ cleaning.py, read the report
+  #    🎛️  Experiment with this stage's values — change one, ▶ cleaning.py, read the report
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
   # │ gaussian
@@ -68,7 +68,7 @@ inputs:
     description: "Filter strength for non-local means"
     default: "10"
 
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
@@ -93,8 +93,8 @@ runs:
     - name: 🧽 Cleaning
       shell: bash
       env:
-        CV_STAGE: cleaning
-        CV_KNOBS: ${{ toJSON(inputs) }}
+        STAGE: cleaning
+        STAGE_VALUES: ${{ toJSON(inputs) }}
       run: python 2_cleaning/cleaning.py
     - uses: ./.github/actions/stage-publish
       if: always()

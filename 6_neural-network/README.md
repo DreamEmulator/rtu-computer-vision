@@ -22,7 +22,7 @@ This folder is the whole stage:
 | File | |
 |---|---|
 | 📖 `README.md` | you are here: why, and what to try |
-| 🎛️ [`action.yaml`](action.yaml) | **the values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
+| 🎛️ [`action.yaml`](action.yaml) | **this stage's values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
 | 🐍 [`neural_network.py`](neural_network.py) | **the code CI runs**: the network (`build_network`), how it learns (`train`), and the export for a phone, written to be read top to bottom |
 
 Run it: **▶ `neural_network.py` in PyCharm**, or `python 6_neural-network/neural_network.py`. It runs the stages before it if their output is out of date, then this one. You get, in `build/neural_network/`:
@@ -35,7 +35,7 @@ That's exactly what CI shows for this stage when you push, or when you paste a p
 ## What?
 
 ### Step 0 · Snap 📸
-- [ ] Take a photo of what your product should recognise, and put it in `snaps/` (or paste its URL into **Run workflow**).
+- [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
 Also what stage 5 passed on, but a different part of it: the network ignores the feature vectors and learns from the segmented **pixels** (`I_train`, `I_test`, `I_snap`). It needs TensorFlow: `pip install -r requirements-cnn.txt`, and `enabled: "true"`.

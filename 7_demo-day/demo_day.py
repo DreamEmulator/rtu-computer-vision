@@ -22,7 +22,7 @@ import os
 from datetime import datetime, timezone
 
 from stages import webhook
-from stages.common import _fmt, fresh_stage_dir, load_config, stage_dir
+from stages.common import _fmt, fresh_stage_dir, load_stage_values, stage_dir
 from stages.stage import run
 from stages.registry import BY_KEY, ORDER
 
@@ -56,8 +56,8 @@ def overall(results: dict) -> str:
 ICON = {"passed": "✅", "failed": "❌", "skipped": "⏭️", "off": "⏸️", "error": "💥"}
 
 
-def summary_markdown(results: dict, c: dict) -> str:
-    lines = [f"# 🎤 Demo Day — {c.get('project_name')}", "", f"> {c.get('pitch')}", "",
+def summary_markdown(results: dict, stage_values: dict) -> str:
+    lines = [f"# 🎤 Demo Day — {stage_values.get('project_name')}", "", f"> {stage_values.get('pitch')}", "",
              "| | Stage | Headline | Gates | ⏱ |", "|---|---|---|---|---|"]
     for k, m in results.items():
         s, st = BY_KEY[k], status(m)
@@ -152,7 +152,7 @@ pre{background:var(--paper);border:2px solid var(--mint-2);padding:16px;overflow
 """
 
 
-def build_html(results: dict, c: dict) -> str:
+def build_html(results: dict, stage_values: dict) -> str:
     esc = html.escape
     ok = overall(results) == "passed"
     repo = os.environ.get("GITHUB_REPOSITORY", "local run")
@@ -193,18 +193,18 @@ def build_html(results: dict, c: dict) -> str:
                         f'<span class="when">{esc(s.topic_title)}, lecture {esc(s.lecture)}</span></header>'
                         f'<p class="q">{esc(s.question)}</p>{body}</section>')
 
-    knobs = "\n".join(f"{k}: " + json.dumps(m.get("knobs", {}), default=str) for k, m in results.items() if m)
-    config = esc(knobs or "no stage ran")
+    used = "\n".join(f"{k}: " + json.dumps(m.get("stage_values", {}), default=str) for k, m in results.items() if m)
+    config = esc(used or "no stage ran")
     verdict = ("Every gate passed. Ship it." if ok
                else "Not ready to ship: at least one gate failed or a stage did not run.")
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{esc(c.get('project_name'))} · Demo Day</title>
+<title>{esc(stage_values.get('project_name'))} · Demo Day</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
 <style>{CSS}</style></head><body><main>
-<h1>{esc(c.get('project_name'))}</h1>
-<p class="pitch">{esc(c.get('pitch'))}</p>
+<h1>{esc(stage_values.get('project_name'))}</h1>
+<p class="pitch">{esc(stage_values.get('pitch'))}</p>
 <p class="run">{esc(repo)} {esc(ref)} {esc(sha)} — {when}</p>
 <p class="verdict {'passed' if ok else 'failed'}">{verdict}</p>
 <nav class="strip" aria-label="Pipeline stages">{lane("Pre-Processing", PIPELINE[:3])}{lane("Processing", PIPELINE[3:])}</nav>
@@ -215,11 +215,11 @@ def build_html(results: dict, c: dict) -> str:
 
 
 def main() -> None:
-    c = load_config()[KEY]
+    stage_values = load_stage_values()[KEY]
     out = fresh_stage_dir(KEY)
     results = collect()
-    (out / "index.html").write_text(build_html(results, c), encoding="utf-8")
-    md = summary_markdown(results, c)
+    (out / "index.html").write_text(build_html(results, stage_values), encoding="utf-8")
+    md = summary_markdown(results, stage_values)
     print(md)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:

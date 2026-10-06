@@ -3,7 +3,7 @@
 #  Lecture: Image Segmentation · Tue 29.09
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  README.md       why this stage exists, and what to try
-#  action.yaml     you are here: the values segmenting.py runs with
+#  action.yaml     you are here: this stage's values, segmenting.py runs with them
 #  segmenting.py   the code: ▶ it, read build/segmenting/report.md and before_after.png
 #
 #  A threshold turns brightness into yes/no, morphology repairs the mask,
@@ -16,7 +16,7 @@ description: Separate the drip chamber from the background.
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  #    🎛️  TINKER ZONE — the values: change one, ▶ segmenting.py, read the report
+  #    🎛️  Experiment with this stage's values — change one, ▶ segmenting.py, read the report
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
   # │ otsu
@@ -102,7 +102,7 @@ inputs:
     description: "masked | mask | crop | original — what Extracting receives"
     default: "masked"
 
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
@@ -125,8 +125,8 @@ runs:
     - name: ✂️ Segmenting
       shell: bash
       env:
-        CV_STAGE: segmenting
-        CV_KNOBS: ${{ toJSON(inputs) }}
+        STAGE: segmenting
+        STAGE_VALUES: ${{ toJSON(inputs) }}
       run: python 4_segmenting/segmenting.py
     - uses: ./.github/actions/stage-publish
       if: always()

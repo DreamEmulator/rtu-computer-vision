@@ -37,19 +37,19 @@ from stages.stage import Stage, picture, run   # 🔒 the plumbing: values, inpu
 #      adaptive  a different T for every pixel: the Gaussian-weighted mean of its own neighbourhood
 #                (adaptive_block pixels wide) minus adaptive_c. Uneven light stops mattering.
 
-def threshold(gray: np.ndarray, knobs: dict) -> tuple[np.ndarray, float]:
+def threshold(gray: np.ndarray, stage_values: dict) -> tuple[np.ndarray, float]:
     """→ (mask of 0 and 255, the T it used; nan when every neighbourhood has its own)."""
-    method = knobs.get("threshold", "otsu")
-    mode = cv2.THRESH_BINARY_INV if knobs.get("invert", True) else cv2.THRESH_BINARY
+    method = stage_values.get("threshold", "otsu")
+    mode = cv2.THRESH_BINARY_INV if stage_values.get("invert", True) else cv2.THRESH_BINARY
     if method == "global":
-        t, mask = cv2.threshold(gray, knobs.get("global_value", 127), 255, mode)
+        t, mask = cv2.threshold(gray, stage_values.get("global_value", 127), 255, mode)
     elif method == "otsu":
         t, mask = cv2.threshold(gray, 0, 255, mode | cv2.THRESH_OTSU)                  # the 0 is ignored: Otsu picks T
     elif method == "triangle":
         t, mask = cv2.threshold(gray, 0, 255, mode | cv2.THRESH_TRIANGLE)
     elif method == "adaptive":
         mask = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, mode,
-                                     odd(max(3, knobs.get("adaptive_block", 31))), knobs.get("adaptive_c", 5))
+                                     odd(max(3, stage_values.get("adaptive_block", 31))), stage_values.get("adaptive_c", 5))
         t = float("nan")
     else:
         raise SystemExit(f"❌ Unknown threshold '{method}'. Choose global | otsu | triangle | adaptive")
@@ -65,12 +65,12 @@ def threshold(gray: np.ndarray, knobs: dict) -> tuple[np.ndarray, float]:
 #      open    erode, then dilate: splinters gone, size kept      close  dilate, then erode: cracks gone, size kept
 #    The order matters: [open, close] and [close, open] give different masks. Try both.
 
-def morphology(mask: np.ndarray, knobs: dict) -> np.ndarray:
-    kernel = tool(knobs.get("morph_shape", "ellipse"), knobs.get("morph_kernel", 3))
-    for op in knobs.get("morphology") or []:
+def morphology(mask: np.ndarray, stage_values: dict) -> np.ndarray:
+    kernel = tool(stage_values.get("morph_shape", "ellipse"), stage_values.get("morph_kernel", 3))
+    for op in stage_values.get("morphology") or []:
         if op not in MORPH:
             raise SystemExit(f"❌ Unknown morphology step '{op}'. Choose erode | dilate | open | close")
-        mask = cv2.morphologyEx(mask, MORPH[op], kernel, iterations=int(knobs.get("morph_iterations") or 1))
+        mask = cv2.morphologyEx(mask, MORPH[op], kernel, iterations=int(stage_values.get("morph_iterations") or 1))
     return mask
 
 
@@ -80,20 +80,20 @@ def morphology(mask: np.ndarray, knobs: dict) -> np.ndarray:
 #    can throw away the small ones (min_contour_area, in px²). Careful: the drop is small too.
 #    fill_holes colours in everything inside a kept outline: every closed curve has an inside (Jordan, 1887).
 
-def find_contours(mask: np.ndarray, knobs: dict) -> list:
-    mode, points = knobs.get("contour_mode", "external"), knobs.get("contour_points", "simple")
+def find_contours(mask: np.ndarray, stage_values: dict) -> list:
+    mode, points = stage_values.get("contour_mode", "external"), stage_values.get("contour_points", "simple")
     if mode not in MODES or points not in POINTS:
         raise SystemExit("❌ contour_mode must be external | list | ccomp | tree, contour_points none | simple")
     contours, _ = cv2.findContours(mask, MODES[mode], POINTS[points])
     return list(contours)
 
 
-def keep_contours(mask: np.ndarray, knobs: dict) -> tuple[np.ndarray, list]:
+def keep_contours(mask: np.ndarray, stage_values: dict) -> tuple[np.ndarray, list]:
     """→ (mask of the objects we keep, their outlines)."""
-    kept = [k for k in find_contours(mask, knobs) if cv2.contourArea(k) >= knobs.get("min_contour_area", 8)]
+    kept = [k for k in find_contours(mask, stage_values) if cv2.contourArea(k) >= stage_values.get("min_contour_area", 8)]
     filled = np.zeros_like(mask)
     cv2.drawContours(filled, kept, -1, 255, thickness=cv2.FILLED)
-    return (filled if knobs.get("fill_holes") else cv2.bitwise_and(mask, filled)), kept
+    return (filled if stage_values.get("fill_holes") else cv2.bitwise_and(mask, filled)), kept
 
 
 # ── 4d · Boundary ─────────────────────────────────────────────────────────────────────────────────────
@@ -101,11 +101,11 @@ def keep_contours(mask: np.ndarray, knobs: dict) -> tuple[np.ndarray, list]:
 #    inner = the crust inside, outer = a ring just outside, gradient = both. none passes the whole objects on.
 #    Contours (4c) give you the outline as points, good for measuring; a boundary gives it as pixels.
 
-def boundary(mask: np.ndarray, knobs: dict) -> np.ndarray:
-    method = knobs.get("boundary") or "none"
+def boundary(mask: np.ndarray, stage_values: dict) -> np.ndarray:
+    method = stage_values.get("boundary") or "none"
     if method == "none":
         return mask
-    kernel = tool(knobs.get("boundary_shape", "rect"), knobs.get("boundary_kernel", 3))
+    kernel = tool(stage_values.get("boundary_shape", "rect"), stage_values.get("boundary_kernel", 3))
     if method == "inner":
         return cv2.subtract(mask, cv2.erode(mask, kernel))
     if method == "outer":
@@ -139,32 +139,32 @@ def apply(img: np.ndarray, mask: np.ndarray, contours: list, how: str) -> np.nda
 
 # ── One frame, all steps ──────────────────────────────────────────────────────────────────────────────
 
-def segment(img: np.ndarray, knobs: dict, space: str, steps: list | None = None):
+def segment(img: np.ndarray, stage_values: dict, space: str, steps: list | None = None):
     """One frame in → (what stage 5 receives, the mask, the kept outlines, T). `steps` collects the pictures."""
     picture(steps, "in: from stage 3", img, space)
-    mask, t = threshold(to_luma(img, space), knobs)
+    mask, t = threshold(to_luma(img, space), stage_values)
     picture(steps, "4a threshold", mask)
-    mask = morphology(mask, knobs)
+    mask = morphology(mask, stage_values)
     picture(steps, "4b morphology", mask)
-    mask, contours = keep_contours(mask, knobs)
+    mask, contours = keep_contours(mask, stage_values)
     picture(steps, "4c contours", overlay(img, mask, contours, space), "bgr")
-    mask = boundary(mask, knobs)
-    if (knobs.get("boundary") or "none") != "none":
+    mask = boundary(mask, stage_values)
+    if (stage_values.get("boundary") or "none") != "none":
         picture(steps, "4d boundary", mask)
-    out = apply(img, mask, contours, knobs.get("pass_on", "masked"))
+    out = apply(img, mask, contours, stage_values.get("pass_on", "masked"))
     picture(steps, "out: to stage 5", out, "gray" if out.ndim == 2 else space)
     return out, mask, contours, t
 
 
 def main() -> None:
     stage = Stage("segmenting")                  # the values from action.yaml
-    knobs, frames = stage.knobs, stage.frames()  # every frame stage 3 passed on, and your snap
-    space, how = frames.color_space, knobs.get("pass_on", "masked")
+    stage_values, frames = stage.values, stage.frames()  # every frame stage 3 passed on, and your snap
+    space, how = frames.color_space, stage_values.get("pass_on", "masked")
 
     outputs, masks, outlines, thresholds = [], [], [], []
     t0 = time.perf_counter()
     for i, img in enumerate(frames.images):
-        out, mask, contours, t = segment(img, knobs, space, stage.steps(i))
+        out, mask, contours, t = segment(img, stage_values, space, stage.steps(i))
         outputs.append(out); masks.append(mask); outlines.append(contours); thresholds.append(t)
     ms = 1000 * (time.perf_counter() - t0) / len(frames.images)
     stage.save(outputs, {"color_space": "gray" if how == "mask" else space})
@@ -173,7 +173,7 @@ def main() -> None:
     data = frames.data_idx
     fg = np.array([(masks[i] > 0).mean() for i in data])
     per_frame = float(np.mean([len(outlines[i]) for i in data]))
-    stage.metric("threshold method", knobs.get("threshold"))
+    stage.metric("threshold method", stage_values.get("threshold"))
     data_t = [thresholds[i] for i in data]
     if not np.all(np.isnan(data_t)):
         stage.metric("mean threshold value", float(np.nanmean(data_t)), "The average T it picked (0 = black, 255 = white).")
@@ -186,8 +186,8 @@ def main() -> None:
     stage.metric("full masks %", 100 * (fg > 0.95).mean(), "Frames where everything was kept: the segmentation did nothing.",
                  "good" if (fg > 0.95).mean() == 0 else "check")
     stage.metric("passed on", how, "What stage 5 receives (pass_on).")
-    if (knobs.get("boundary") or "none") != "none":
-        stage.metric("boundary", knobs.get("boundary"))
+    if (stage_values.get("boundary") or "none") != "none":
+        stage.metric("boundary", stage_values.get("boundary"))
     stage.perf("ms per frame", ms)
 
     if (i := frames.snap_idx) is not None:
@@ -199,15 +199,15 @@ def main() -> None:
     # 💡 What to try next, depending on what happened
     if per_frame > 10:
         stage.tip("Lots of small objects: put `open` first in `morphology`, or raise `min_contour_area` (the drop is small, though).")
-    if knobs.get("threshold") in ("global", "otsu"):
+    if stage_values.get("threshold") in ("global", "otsu"):
         stage.tip("One T for the whole frame: compare with `threshold: adaptive` in the corners of before_after.png.")
     if 100 * fg.mean() > 60:
         stage.tip("Most pixels count as object: is `invert` right for your photos?")
     stage.tip("`pass_on: original` keeps this stage but ignores it. Same accuracy at the end? Then segmentation isn't helping yet.")
 
-    stage.gate("empty mask ratio", (fg < 0.005).mean(), max=knobs.get("gate_max_empty_ratio"))
-    stage.gate("full mask ratio", (fg > 0.95).mean(), max=knobs.get("gate_max_full_ratio"))
-    stage.finish(f"4 · Segmenting — {knobs.get('threshold')} threshold, morphology {knobs.get('morphology')}")
+    stage.gate("empty mask ratio", (fg < 0.005).mean(), max=stage_values.get("gate_max_empty_ratio"))
+    stage.gate("full mask ratio", (fg > 0.95).mean(), max=stage_values.get("gate_max_full_ratio"))
+    stage.finish(f"4 · Segmenting — {stage_values.get('threshold')} threshold, morphology {stage_values.get('morphology')}")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────────────────────────────

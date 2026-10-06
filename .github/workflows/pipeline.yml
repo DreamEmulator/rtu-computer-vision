@@ -15,10 +15,10 @@
 #    Step 0  snap a picture, put it online, paste its URL in Actions → Run workflow → it runs
 #            through every stage, and Demo Day's report (GitHub Pages) shows what happened to it
 #    Step 1  take the input from the previous stage (an artifact)
-#    Step 2  check, improve and play: tinker, push, enjoy the visual results
+#    Step 2  change one of a stage's values, run it, compare the report and the picture
 #    Step 3  analyse the results; the gates decide if we pass on to the next stage
 #
-#  Runs on: pull requests (not docs-only ones), pushes to snaps/, and the Run workflow button
+#  Runs on: pull requests (not docs-only ones), pushes to images_for_analyzing/, and the Run workflow button
 #  (with or without a photo URL). A web page can also send a snap: repository_dispatch type "snap".
 #  Locally: python run_pipeline.py --snap photo.jpg
 # ══════════════════════════════════════════════════════════════════════════════
@@ -27,14 +27,14 @@ name: 🚀 CI-Pipeline
 on:
   push:
     paths:
-      - "snaps/**"
-      - "!snaps/**.md"
+      - "images_for_analyzing/**"
+      - "!images_for_analyzing/**.md"
   pull_request:
     paths-ignore: ["**.md", "**.svg", ".devcontainer/**", "docs/**"]
   workflow_dispatch:
     inputs:
       snap_url:
-        description: "📸 URL of a photo to send through every stage (empty: the photo in snaps/)"
+        description: "📸 URL of an image to send through every stage (empty: the one in images_for_analyzing/)"
         required: false
   repository_dispatch:
     types: [snap]

@@ -3,7 +3,7 @@
 #  Lecture: Introduction to Image Processing · Tue 22.09
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  README.md       why this stage exists, and what to try
-#  action.yaml     you are here: the values digital_data.py runs with
+#  action.yaml     you are here: this stage's values, digital_data.py runs with them
 #  digital_data.py the code: ▶ it, read build/digital_data/report.md and before_after.png
 #
 #  Every frame (and your snap from Step 0) becomes a grid of numbers with the
@@ -17,17 +17,17 @@ description: Collect, split and normalise every frame, plus the snap from Step 0
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  #    🎛️  TINKER ZONE — the values: change one, ▶ digital_data.py, read the report
+  #    🎛️  Experiment with this stage's values — change one, ▶ digital_data.py, read the report
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
   # │ Where the frames come from. "synthetic" draws a day-zero dataset of drip
-  # │ chambers; "folder" reads your own photos from data/raw/<class>/*.jpg.
+  # │ chambers; "folder" reads your own images from images_for_training/<class>/.
   source:
     description: "synthetic | folder"
     default: "synthetic"
   folder:
     description: "Folder with one sub-folder per class (used when source is folder)"
-    default: "data/raw"
+    default: "images_for_training"
   synthetic_per_class:
     description: "Frames per class in the synthetic dataset"
     default: "120"
@@ -87,7 +87,7 @@ inputs:
     description: "null, or 0 | 1 | 2 to keep one channel of the colour space"
     default: "null"
 
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
@@ -109,8 +109,8 @@ runs:
     - name: 📷 Digital Data
       shell: bash
       env:
-        CV_STAGE: digital_data
-        CV_KNOBS: ${{ toJSON(inputs) }}
+        STAGE: digital_data
+        STAGE_VALUES: ${{ toJSON(inputs) }}
       run: python 1_digital-data/digital_data.py
     - uses: ./.github/actions/stage-publish
       if: always()

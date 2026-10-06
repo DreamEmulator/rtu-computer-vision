@@ -43,34 +43,34 @@ COLOR = {"gray": cv2.COLOR_BGR2GRAY, "hsv": cv2.COLOR_BGR2HSV, "lab": cv2.COLOR_
 MAX_SNAP_BYTES = 15 * 1024 * 1024
 
 
-def prepare(img_bgr: np.ndarray, cfg: dict, steps: list | None = None) -> np.ndarray:
+def prepare(img_bgr: np.ndarray, stage_values: dict, steps: list | None = None) -> np.ndarray:
     """The whole stage for one frame. Order matters: rotate → crop → resize → colour space."""
     img = img_bgr
     picture(steps, "camera", shrink(img), "bgr")
-    rot = int(cfg.get("rotate") or 0) % 360
+    rot = int(stage_values.get("rotate") or 0) % 360
     if rot:
         img = cv2.rotate(img, ROTATE[rot])
         picture(steps, f"rotate {rot}°", shrink(img), "bgr")
-    if cfg.get("crop"):
+    if stage_values.get("crop"):
         h, w = img.shape[:2]
-        x0, y0, x1, y1 = cfg["crop"]
+        x0, y0, x1, y1 = stage_values["crop"]
         img = img[int(y0 * h):int(y1 * h), int(x0 * w):int(x1 * w)]
         picture(steps, "crop", shrink(img), "bgr")
-    width, height = cfg.get("size") or [128, 128]
-    img = cv2.resize(img, (int(width), int(height)), interpolation=INTERPOLATION[cfg.get("interpolation", "area")])
+    width, height = stage_values.get("size") or [128, 128]
+    img = cv2.resize(img, (int(width), int(height)), interpolation=INTERPOLATION[stage_values.get("interpolation", "area")])
     picture(steps, f"resize {width}×{height}", img, "bgr")
-    space = cfg.get("color_space", "gray")
+    space = stage_values.get("color_space", "gray")
     if space != "bgr":
         img = cv2.cvtColor(img, COLOR[space])
-    if cfg.get("channel") is not None and img.ndim == 3:
-        img = np.ascontiguousarray(img[..., int(cfg["channel"])])
-    picture(steps, f"out: {space}" + (f" channel {cfg['channel']}" if cfg.get("channel") is not None else ""),
+    if stage_values.get("channel") is not None and img.ndim == 3:
+        img = np.ascontiguousarray(img[..., int(stage_values["channel"])])
+    picture(steps, f"out: {space}" + (f" channel {stage_values['channel']}" if stage_values.get("channel") is not None else ""),
             img, "gray" if img.ndim == 2 else space)
     return img
 
 
 def find_images(folder: Path) -> list[tuple[Path, str]]:
-    """data/raw/<class>/<file> → [(path, class), ...]"""
+    """images_for_training/<class>/<file> → [(path, class), ...]"""
     items = []
     for class_dir in sorted(p for p in folder.iterdir() if p.is_dir()):
         items += [(p, class_dir.name) for p in sorted(class_dir.iterdir()) if p.suffix.lower() in IMG_EXT]
@@ -125,8 +125,8 @@ def fetch_snap(src: str) -> tuple[np.ndarray, int]:
     return img, len(data)
 
 def default_snap() -> str:
-    """No snap_url given? Use the photo in snaps/ (the last one by name if there are several)."""
-    folder = ROOT / "snaps"
+    """No snap_url given? Use the image in images_for_analyzing/ (the last one by name if there are several)."""
+    folder = ROOT / "images_for_analyzing"
     photos = sorted(p for p in folder.iterdir() if p.suffix.lower() in IMG_EXT) if folder.is_dir() else []
     return str(photos[-1]) if photos else ""
 
@@ -148,14 +148,14 @@ def shrink(img: np.ndarray, side: int = 384) -> np.ndarray:
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    c, report = stage.knobs, stage.report
+    stage_values, report = stage.values, stage.report
 
-    if c.get("source", "synthetic") == "synthetic":
+    if stage_values.get("source", "synthetic") == "synthetic":
         from tools.synth_drips import generate
-        folder = generate(ROOT / "data" / "synthetic", c.get("synthetic_per_class", 120), c.get("seed", 42))
+        folder = generate(ROOT / "build" / "synthetic", stage_values.get("synthetic_per_class", 120), stage_values.get("seed", 42))
         report.note("Using the synthetic day-zero dataset (source: synthetic)")
     else:
-        folder = ROOT / (c.get("folder") or "data/raw")
+        folder = ROOT / (stage_values.get("folder") or "images_for_training")
     items = find_images(folder) if folder.exists() else []
     if not items:
         raise SystemExit(f"❌ No images found in {folder}. Expected {folder}/<class_name>/*.jpg")
@@ -166,8 +166,8 @@ def main() -> None:
         raise SystemExit("❌ Every class needs at least 2 images to split into train and test.")
 
     # Lock the test set on day one: stratified, seeded, never touched by training, groups never split.
-    groups = groups_of(items, c.get("group_by") or "file")
-    train_idx = split(labels, groups, c.get("test_size", 0.25), c.get("seed", 42))
+    groups = groups_of(items, stage_values.get("group_by") or "file")
+    train_idx = split(labels, groups, stage_values.get("test_size", 0.25), stage_values.get("seed", 42))
     train_set = set(train_idx.tolist())
 
     rows, images, unreadable, resolutions = [], [], 0, []
@@ -181,16 +181,16 @@ def main() -> None:
         resolutions.append(raw.shape[:2])
         rows.append({"file": f"{i:05d}_{label}.png", "label": label,
                      "split": "train" if i in train_set else "test", "source": os.path.relpath(path, ROOT)})
-        images.append(prepare(raw, c))
+        images.append(prepare(raw, stage_values))
     ms_per_frame = 1000 * (time.perf_counter() - t0) / max(1, len(images))
 
-    space = "gray" if images[0].ndim == 2 else c.get("color_space", "gray")
+    space = "gray" if images[0].ndim == 2 else stage_values.get("color_space", "gray")
     snap_raw = None
     snap_src = os.environ.get("SNAP_URL", "").strip() or default_snap()
     if snap_src:
         snap_raw, nbytes = fetch_snap(snap_src)
         t = time.perf_counter()
-        snap_out = prepare(snap_raw, c)
+        snap_out = prepare(snap_raw, stage_values)
         report.snap("camera resolution", f"{snap_raw.shape[1]}×{snap_raw.shape[0]}")
         report.snap("file size KB", nbytes / 1024)
         report.snap("prepare ms", 1000 * (time.perf_counter() - t))
@@ -207,7 +207,7 @@ def main() -> None:
     for i, r in enumerate(rows):
         if (steps := stage.steps(i)) is not None:
             raw = snap_raw if r["split"] == SNAP else cv2.imread(str(ROOT / r["source"]), cv2.IMREAD_COLOR)
-            prepare(raw, c, steps)
+            prepare(raw, stage_values, steps)
 
     data = [r for r in rows if r["split"] != SNAP]
     per_class = {k: sum(r["label"] == k for r in data) for k in classes}
@@ -218,8 +218,8 @@ def main() -> None:
                   "good" if max(per_class.values()) <= 2 * min(per_class.values()) else "check")
     report.metric("train / test", [sum(r["split"] == "train" for r in data), sum(r["split"] == "test" for r in data)],
                   "The test frames are locked away today; every later stage keeps its hands off them.")
-    if (c.get("group_by") or "file") != "file":
-        report.metric(f"groups per class ({c['group_by']})",
+    if (stage_values.get("group_by") or "file") != "file":
+        report.metric(f"groups per class ({stage_values['group_by']})",
                       [len({g for g, l in zip(groups, labels) if l == k}) for k in classes])
     report.metric("median raw resolution (h×w)", "×".join(str(int(v)) for v in np.median(resolutions, axis=0)))
     report.metric("output shape", "×".join(map(str, images[0].shape)),
@@ -233,11 +233,11 @@ def main() -> None:
 
     stage.tip("`size: \"[32, 32]\"`: look at the drop in before_after.png. Is it still there? Put it back afterwards.")
     stage.tip("`color_space: \"hsv\"` with `channel: \"2\"`, then `\"lab\"` with `channel: \"0\"`. Which looks most like grey, and why?")
-    if c.get("source", "synthetic") == "synthetic":
-        stage.tip("Your own classes: frames in data/raw/<class>/ and `source: \"folder\"`. See how-to/add-my-own-classes.md.")
+    if stage_values.get("source", "synthetic") == "synthetic":
+        stage.tip("Your own classes: images in images_for_training/<class>/ and `source: \"folder\"`. See how-to/add-my-own-classes.md.")
 
-    report.gate("images per class", min(per_class.values()), min=c.get("gate_min_images_per_class"))
-    report.gate("unreadable files", unreadable, max=c.get("gate_max_unreadable"))
+    report.gate("images per class", min(per_class.values()), min=stage_values.get("gate_min_images_per_class"))
+    report.gate("unreadable files", unreadable, max=stage_values.get("gate_max_unreadable"))
     stage.finish("1 · Digital Data — camera frame → pipeline input")
 
 

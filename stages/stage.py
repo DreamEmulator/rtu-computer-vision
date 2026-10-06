@@ -4,7 +4,7 @@ before/after picture and the gates. A stage file (e.g. 4_segmenting/segmenting.p
     stage = Stage("segmenting")                  # the values from action.yaml
     frames = stage.frames()                      # what stage 3 passed on
     for i, img in enumerate(frames.images):
-        out = segment(img, stage.knobs, stage.steps(i))   # the maths; steps() collects the pictures
+        out = segment(img, stage.values, stage.steps(i))  # the maths; steps() collects the pictures
     stage.save(outputs)
     stage.metric(...), stage.gate(...)
     stage.finish()                               # report.md, before_after.png, metrics.json, CI summary, webhook
@@ -26,18 +26,18 @@ from stages.deps import check
 check()  # a friendly message instead of a traceback when this Python lacks a package
 
 from stages.common import (BUILD, ROOT, SNAP, ImageSet, StageReport, action_file, fresh_stage_dir,  # noqa: E402
-                           load_config, load_images, run_stage, save_images, to_display)
+                           load_images, load_stage_values, run_stage, save_images, to_display)
 from stages.registry import BY_KEY, ORDER  # noqa: E402
 
 
 class Stage:
     def __init__(self, key: str):
         self.key, self.info = key, BY_KEY[key]
-        self.cfg = load_config()
-        self.knobs: dict = self.cfg[key]                 # the values from action.yaml (in CI: what the action passed in)
+        self.all_values = load_stage_values()            # every stage's values, by stage key
+        self.values: dict = self.all_values[key]         # this stage's values from action.yaml (in CI: what the action passed in)
         self.input: ImageSet | None = None
         self.dir = fresh_stage_dir(key)
-        self.report = StageReport(key, self.cfg)
+        self.report = StageReport(key, self.all_values)
         self.metric, self.perf, self.tip, self.note = self.report.metric, self.report.perf, self.report.tip, self.report.note
         self.snap, self.snap_image, self.gate = self.report.snap, self.report.snap_image, self.report.gate
         self._pictured: dict[int, str] = {}
@@ -124,11 +124,11 @@ def code_files(key: str) -> list[Path]:
 
 def ensure(key: str) -> None:
     """Make sure build/<key>/ is there and up to date: run the pipeline up to it if it's missing or older than
-    a value, a code file or a snap you changed."""
+    a value, a code file or an image for analyzing you changed."""
     done = BUILD / key / "metrics.json"                   # every stage writes it last
     upto = ORDER[:ORDER.index(key) + 1]
     sources = [p for k in upto for p in code_files(k)] + [ROOT / "stages" / "common.py"]
-    sources += [p for p in (ROOT / "snaps").iterdir() if p.is_file()] if (ROOT / "snaps").is_dir() else []
+    sources += [p for p in (ROOT / "images_for_analyzing").iterdir() if p.is_file()] if (ROOT / "images_for_analyzing").is_dir() else []
     if done.exists() and done.stat().st_mtime >= max(p.stat().st_mtime for p in sources if p.exists()):
         return
     why = "isn't there yet" if not done.exists() else "is older than your latest change"

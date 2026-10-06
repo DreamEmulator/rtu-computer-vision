@@ -3,7 +3,7 @@
 #  Lecture: Image Classification with Neural Networks · Thu 08.10
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  README.md       why this stage exists, and what to try
-#  action.yaml     you are here: the values neural_network.py runs with
+#  action.yaml     you are here: this stage's values, neural_network.py runs with them
 #  neural_network.py the code: ▶ it, read build/neural_network/report.md and before_after.png
 #
 #  The CNN skips stage 5's hand-made features and learns its own filters straight
@@ -17,7 +17,7 @@ description: Train a small CNN on the pixels and judge it on the test set.
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  #    🎛️  TINKER ZONE — the values: change one, ▶ neural_network.py, read the report
+  #    🎛️  Experiment with this stage's values — change one, ▶ neural_network.py, read the report
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   enabled:
     description: "true switches the network on (installs TensorFlow, trains, predicts your snap)"
@@ -83,7 +83,7 @@ inputs:
     description: "none | tflite | tflite_quantized — also write model.tflite and preprocessing.json"
     default: "none"
 
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
@@ -112,8 +112,8 @@ runs:
     - name: 🧠 Neural network
       shell: bash
       env:
-        CV_STAGE: neural_network
-        CV_KNOBS: ${{ toJSON(inputs) }}
+        STAGE: neural_network
+        STAGE_VALUES: ${{ toJSON(inputs) }}
       run: python 6_neural-network/neural_network.py
     - uses: ./.github/actions/stage-publish
       if: always()

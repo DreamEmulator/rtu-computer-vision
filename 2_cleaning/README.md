@@ -22,7 +22,7 @@ This folder is the whole stage:
 | File | |
 |---|---|
 | 📖 `README.md` | you are here: why, and what to try |
-| 🎛️ [`action.yaml`](action.yaml) | **the values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
+| 🎛️ [`action.yaml`](action.yaml) | **this stage's values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
 | 🐍 [`cleaning.py`](cleaning.py) | **the code CI runs**: gaussian, median, bilateral or nlmeans, and how much noise is left, written to be read top to bottom |
 
 Run it: **▶ `cleaning.py` in PyCharm**, or `python 2_cleaning/cleaning.py`. It runs the stages before it if their output is out of date, then this one. You get, in `build/cleaning/`:
@@ -35,7 +35,7 @@ That's exactly what CI shows for this stage when you push, or when you paste a p
 ## What?
 
 ### Step 0 · Snap 📸
-- [ ] Take a photo of what your product should recognise, and put it in `snaps/` (or paste its URL into **Run workflow**).
+- [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
 What stage 1 passed on: 128 × 128 grey frames. About a third of them carry camera damage: Gaussian sensor noise, salt-and-pepper dead pixels, motion blur or JPEG blocks.

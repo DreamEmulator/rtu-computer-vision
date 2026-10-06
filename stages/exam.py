@@ -52,7 +52,7 @@ def grade(y_test, y_pred, n_classes: int) -> dict:
 def take(stage, d: SimpleNamespace, y_pred: np.ndarray, snap_proba, model_file, train_s: float, predict_ms: float,
          side=None, title: str = "") -> dict:
     """Grade the predictions, write the report's numbers and gates, and draw before_after.png. → the grades."""
-    c, classes = stage.knobs, d.classes
+    stage_values, classes = stage.values, d.classes
     baseline = DummyClassifier(strategy="most_frequent").fit(np.zeros((len(d.y_train), 1)), d.y_train)
     exam = grade(d.y_test, y_pred, len(classes))
     acc, recalls, cm = exam["accuracy"], exam["recalls"], exam["confusion"]
@@ -60,7 +60,7 @@ def take(stage, d: SimpleNamespace, y_pred: np.ndarray, snap_proba, model_file, 
     plot(stage.dir / "before_after.png", cm, classes, np.flatnonzero(y_pred != d.y_test), d.I_test, d.y_test, y_pred,
          side, d.color_space, title)
 
-    gate_acc, gate_rec = c.get("gate_min_accuracy"), c.get("gate_min_class_recall")
+    gate_acc, gate_rec = stage_values.get("gate_min_accuracy"), stage_values.get("gate_min_class_recall")
     base = baseline.score(np.zeros((len(d.y_test), 1)), d.y_test)
     worst = int(np.argmin(recalls))
     stage.metric("baseline (always guess the majority)", base, "What a model that learned nothing scores. Anything near it hasn't learned.")

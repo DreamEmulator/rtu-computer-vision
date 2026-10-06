@@ -15,14 +15,14 @@ Every layer of the theory is a stage of our pipeline, and **every stage is a fol
 | File | |
 |---|---|
 | 📖 `README.md` | **Why** this stage exists, and **what** to try. Start here |
-| 🎛️ `action.yaml` | **The values** the stage runs with: every one you may change (and the mathematician who thought of it), and the 🚦 gates, the promises the stage keeps |
+| 🎛️ `action.yaml` | **This stage's values**: every one you may change (and the mathematician who thought of it), and the 🚦 gates, the promises the stage keeps |
 | 🐍 `<stage>.py` | **The code** that runs, locally and in CI. Written to be read top to bottom, the lecture in its comments |
 
 Run a stage and it writes two things to `build/<stage>/`: **`report.md`** (the values you passed in, every number with 🟢 🟠 🔴 and what it means, the gates, what changed since your last run) and **`before_after.png`** (your photo and a few test frames, after every step). CI shows exactly the same report for every stage, and Demo Day collects them all on one web page.
 
 That's the whole loop, folder by folder, with apologies to the Underpants Gnomes (*Step 1: collect underpants. Step 2: ? Step 3: profit.*):
 
-* **Step 0 · Snap.** Put a photo in `snaps/`, or paste its URL into **Actions → 🚀 CI-Pipeline → Run workflow**.
+* **Step 0 · Snap.** Put a photo in [`images_for_analyzing/`](images_for_analyzing/), or paste its URL into **Actions → 🚀 CI-Pipeline → Run workflow**.
 * **Step 1 · Read.** The stage's README: why it exists, and what it gets from the stage before.
 * **Step 2 · Change a value, run, compare.** One value in `action.yaml`, ▶ the stage's `.py`, read *Since your last run* in the report and look at the picture. Curious how it works? Read the code, and change that too.
 * **Step 3 · Decide.** The gates say whether the stage is ready to pass on. Push, and CI runs every stage in a row.
@@ -38,7 +38,7 @@ Three levels, one after the other, and you can stop at any of them:
 1. Click **Use this template → Create a new repository**.
 2. Open the **Actions** tab. The first run starts by itself and takes a few minutes. A small *Template init* job also points every link at your own copy.
 3. Open the run and read the summary: one report per stage, with a download link for its pictures.
-4. **Locally, in PyCharm:** open the folder and give it its own interpreter (Settings → Project → Python Interpreter → Add Interpreter → Add Local Interpreter → Virtualenv in `.venv`), then open `requirements.txt` and click *Install requirements*. The run menu next to ▶ lists every stage (**🚀 Stages**) and the whole pipeline (**0 · Everything**).
+4. **Locally, in PyCharm:** open the folder and give it its own interpreter (Settings → Project → Python Interpreter → Add Interpreter → Add Local Interpreter → Virtualenv in `.venv`), then open `requirements.txt` and click *Install requirements*. Open any stage's `.py` and click the green ▶ next to `if __name__ == "__main__":`. For the whole pipeline: ▶ `run_pipeline.py`.
 5. **An experiment:** a branch, one value, a pull request. CI runs on it, and the PR template asks for your hypothesis and the numbers of `main` against your branch.
    ```bash
    git switch -c experiment/median-kernel-5
@@ -73,7 +73,7 @@ The random forest and the neural network run side by side after Extracting. The 
 
 ## Taking it for real: your own subject
 
-The pipeline doesn't know it's looking at drips. Put your frames in one folder per class and set `source: "folder"` in [1_digital-data/action.yaml](1_digital-data/action.yaml). See [data/raw/README.md](data/raw/README.md), or follow [How to add my own classes?](how-to/add-my-own-classes.md) from video to green gates. Then retune stage by stage; the gates tell you where your data differs from ours.
+The pipeline doesn't know it's looking at drips. Put your frames in one folder per class and set `source: "folder"` in [1_digital-data/action.yaml](1_digital-data/action.yaml). See [images_for_training/](images_for_training/), or follow [How to add my own classes?](how-to/add-my-own-classes.md) from video to green gates. Then retune stage by stage; the gates tell you where your data differs from ours.
 
 ## ❓ How To's
 
@@ -81,7 +81,7 @@ Questions that cross every stage, answered step by step, with forks for what you
 
 | ❓ How to… | |
 |---|---|
-| [add my own classes?](how-to/add-my-own-classes.md) | 🎬 film → frames → `data/raw/` → an honest test set |
+| [add my own classes?](how-to/add-my-own-classes.md) | 🎬 film → frames → `images_for_training/` → an honest test set |
 | [train our model on cows?](how-to/train-our-model-on-cows.md) | 🔍 read the mistakes, find the stage at fault, fix one thing |
 | [pick which model I am training?](how-to/pick-which-model-i-am-training.md) | ⚖️ forest, SVM, kNN or network, with numbers |
 | [export a tflite file from our pipeline?](how-to/export-a-tflite-file.md) | 📱 a model for a phone, and the catch nobody mentions |
@@ -91,7 +91,7 @@ Questions that cross every stage, answered step by step, with forks for what you
 1. Push this repository to GitHub and tick **Settings → General → Template repository**. *Template init* points the links in every Markdown file at each student's own repository.
 2. Publish Demo Day as a website with **Settings → Pages → Source: GitHub Actions** (or the repository variable `ENABLE_PAGES = true`).
 3. The pictures in each README come from `python -m tools.make_pipeline_svg`.
-4. Optional, for a page that starts runs and follows them live: [docs/step-0-snap.md](docs/step-0-snap.md) (webhooks, `repository_dispatch`). `python -m tools.webhook_receiver` stands in for that page while you build it.
+4. Optional: a web page can start runs (`repository_dispatch`, type `snap`) and follow them live through signed webhooks (repository variable `CV_WEBHOOK_URL`, secret `CV_WEBHOOK_SECRET`). `python -m tools.webhook_receiver` prints the events while you build one.
 
 ## What's where
 
@@ -104,11 +104,10 @@ Questions that cross every stage, answered step by step, with forks for what you
 .github/workflows/pipeline.yml ← the whole pipeline in CI: every stage folder, in a row
 run_pipeline.py                ← the whole pipeline on your machine
 stages/                        ← 🔒 plumbing every stage shares: loading, saving, the report, the exam, gates
-.run/                          ← PyCharm's ▶ for every stage and for the whole pipeline
 how-to/                        ← ❓ questions that cross every stage
 tools/                         ← synthetic dataset, frames from video, snap trigger, pipeline pictures
-data/raw/                      ← your own frames (source: folder)
-snaps/                         ← your Step 0 photo
+images_for_training/           ← the images it learns from, one folder per class (source: folder)
+images_for_analyzing/          ← the image it analyzes for you (Step 0); never learned from, never graded
 ```
 
 Why does every stage folder hold an `action.yaml`? GitHub imports a step from any folder that has one: that's how CI runs each folder as one stage.

@@ -3,7 +3,7 @@
 #  Lecture: Image Preprocessing Methods · Thu 24.09
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  README.md       why this stage exists, and what to try
-#  action.yaml     you are here: the values improving.py runs with
+#  action.yaml     you are here: this stage's values, improving.py runs with them
 #  improving.py    the code: ▶ it, read build/improving/report.md and before_after.png
 #
 #  Nearly half our frames come from a dim ward at night: all brightness values
@@ -17,7 +17,7 @@ description: Stretch contrast for the night shift and find the edges.
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  #    🎛️  TINKER ZONE — the values: change one, ▶ improving.py, read the report
+  #    🎛️  Experiment with this stage's values — change one, ▶ improving.py, read the report
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
   # │ equalize
@@ -72,7 +72,7 @@ inputs:
     description: "enhanced | edges — what Segmenting receives"
     default: "enhanced"
 
-  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━ end of TINKER ZONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # ━━━━━━━━━━━━━━━━━━━━━━━ end of this stage's values ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   #    🚦 GATE ZONE — fail one and the pipeline stops here (null switches it off)
@@ -94,8 +94,8 @@ runs:
     - name: 🔆 Improving
       shell: bash
       env:
-        CV_STAGE: improving
-        CV_KNOBS: ${{ toJSON(inputs) }}
+        STAGE: improving
+        STAGE_VALUES: ${{ toJSON(inputs) }}
       run: python 3_improving/improving.py
     - uses: ./.github/actions/stage-publish
       if: always()

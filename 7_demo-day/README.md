@@ -22,7 +22,7 @@ This folder is the whole stage:
 | File | |
 |---|---|
 | 📖 `README.md` | you are here: why, and what to try |
-| 🎛️ [`action.yaml`](action.yaml) | **the values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
+| 🎛️ [`action.yaml`](action.yaml) | **this stage's values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
 | 🐍 [`demo_day.py`](demo_day.py) | **the code CI runs last**: one page from every stage's report and picture, written to be read top to bottom |
 
 Run it: **▶ `demo_day.py` in PyCharm** after the pipeline ran, or `python 7_demo-day/demo_day.py`. You get `build/demo_day/index.html`: the whole run on one page, which CI publishes on GitHub Pages.
@@ -30,7 +30,7 @@ Run it: **▶ `demo_day.py` in PyCharm** after the pipeline ran, or `python 7_de
 ## What?
 
 ### Step 0 · Snap 📸
-- [ ] Take a photo of what your product should recognise, and put it in `snaps/` (or paste its URL into **Run workflow**).
+- [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
 Every stage's output. Demo Day runs even when a gate failed, so the page always shows where the pipeline stopped.

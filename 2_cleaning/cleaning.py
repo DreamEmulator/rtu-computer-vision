@@ -33,24 +33,24 @@ from stages.stage import Stage, picture, run   # 🔒 the plumbing: values, inpu
 KEY = "cleaning"
 
 
-def clean(img: np.ndarray, cfg: dict, space: str = "gray", steps: list | None = None) -> np.ndarray:
+def clean(img: np.ndarray, stage_values: dict, space: str = "gray", steps: list | None = None) -> np.ndarray:
     """One frame in, one cleaned frame out. `method` may be a list: the filters run one after the other."""
     picture(steps, "in: from stage 1", img, space)
     original = img
-    methods = cfg.get("method", "median")
+    methods = stage_values.get("method", "median")
     for method in methods if isinstance(methods, list) else [methods]:
-        k = odd(cfg.get("kernel", 3))
+        k = odd(stage_values.get("kernel", 3))
         if method in (None, "none"):
             continue
         elif method == "gaussian":
-            img = cv2.GaussianBlur(img, (k, k), cfg.get("sigma") or 0)
+            img = cv2.GaussianBlur(img, (k, k), stage_values.get("sigma") or 0)
         elif method == "median":
             img = cv2.medianBlur(img, max(3, k))
         elif method == "bilateral":
-            img = cv2.bilateralFilter(img, cfg.get("bilateral_diameter", 7),
-                                      cfg.get("bilateral_sigma_color", 50), cfg.get("bilateral_sigma_space", 50))
+            img = cv2.bilateralFilter(img, stage_values.get("bilateral_diameter", 7),
+                                      stage_values.get("bilateral_sigma_color", 50), stage_values.get("bilateral_sigma_space", 50))
         elif method == "nlmeans":
-            img = cv2.fastNlMeansDenoising(img, None, cfg.get("nlmeans_h", 10), 7, 21)
+            img = cv2.fastNlMeansDenoising(img, None, stage_values.get("nlmeans_h", 10), 7, 21)
         else:
             raise SystemExit(f"❌ Unknown method '{method}'. Choose none | gaussian | median | bilateral | nlmeans")
         picture(steps, f"{method} {k}×{k}" if method in ("gaussian", "median") else method, img, space)
@@ -84,11 +84,11 @@ def removed(before: np.ndarray, after: np.ndarray) -> np.ndarray:
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    c, frames = stage.knobs, stage.frames()      # every frame stage 1 passed on, and your snap
+    stage_values, frames = stage.values, stage.frames()      # every frame stage 1 passed on, and your snap
     space = frames.color_space
 
     t0 = time.perf_counter()
-    cleaned = [clean(im, c, space, stage.steps(i)) for i, im in enumerate(frames.images)]
+    cleaned = [clean(im, stage_values, space, stage.steps(i)) for i, im in enumerate(frames.images)]
     ms = 1000 * (time.perf_counter() - t0) / max(1, len(cleaned))
     stage.save(cleaned)
 
@@ -96,8 +96,8 @@ def main() -> None:
     noise_after = np.mean([estimate_noise(im) for im in frames.data(cleaned)])
     sharp_before = np.mean([sharpness(im) for im in frames.data()])
     sharp_after = np.mean([sharpness(im) for im in frames.data(cleaned)])
-    gate = c.get("gate_max_noise")
-    stage.metric("method", c.get("method"))
+    gate = stage_values.get("gate_max_noise")
+    stage.metric("method", stage_values.get("method"))
     stage.metric("noise σ before", noise_before, "Estimated grain in the frames as they came in (Immerkær's method).")
     stage.metric("noise σ after", noise_after, f"What's left after cleaning. Lower is better; the 🚦 gate allows {gate}.",
                  "good" if gate is None or noise_after <= gate else "bad")
@@ -119,7 +119,7 @@ def main() -> None:
     stage.tip("`method: \"none\"`: which stage breaks, and does stage 6 even get to run?")
 
     stage.gate("noise σ after cleaning", noise_after, max=gate)
-    stage.finish(f"2 · Cleaning — {c.get('method')} (kernel {odd(c.get('kernel', 3))})")
+    stage.finish(f"2 · Cleaning — {stage_values.get('method')} (kernel {odd(stage_values.get('kernel', 3))})")
 
 
 if __name__ == "__main__":

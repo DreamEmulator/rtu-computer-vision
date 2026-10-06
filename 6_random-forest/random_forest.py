@@ -48,30 +48,30 @@ KEY = "random_forest"
 #    knn            you are what your neighbours are (Fix & Hodges, 1951). It keeps every training frame
 #    SVM and kNN measure distances, so they need stage 5's scaling. Trees only ask "bigger than?" and don't.
 
-def build_model(knobs: dict, seed: int):
-    name = knobs.get("model", "random_forest")
+def build_model(stage_values: dict, seed: int):
+    name = stage_values.get("model", "random_forest")
     if name == "random_forest":
-        return RandomForestClassifier(n_estimators=knobs.get("n_estimators", 200),
-                                      max_features=knobs.get("max_features", "sqrt"),
-                                      max_depth=knobs.get("max_depth"), min_samples_leaf=knobs.get("min_samples_leaf", 1),
-                                      class_weight=knobs.get("class_weight"), random_state=seed, n_jobs=-1)
+        return RandomForestClassifier(n_estimators=stage_values.get("n_estimators", 200),
+                                      max_features=stage_values.get("max_features", "sqrt"),
+                                      max_depth=stage_values.get("max_depth"), min_samples_leaf=stage_values.get("min_samples_leaf", 1),
+                                      class_weight=stage_values.get("class_weight"), random_state=seed, n_jobs=-1)
     if name == "svm":
-        svm = SVC(C=knobs.get("svm_c", 1.0), kernel=knobs.get("svm_kernel", "rbf"), gamma=knobs.get("svm_gamma", "scale"))
+        svm = SVC(C=stage_values.get("svm_c", 1.0), kernel=stage_values.get("svm_kernel", "rbf"), gamma=stage_values.get("svm_gamma", "scale"))
         return CalibratedClassifierCV(svm, ensemble=False)
     if name == "knn":
-        return KNeighborsClassifier(n_neighbors=knobs.get("knn_neighbors", 5))
+        return KNeighborsClassifier(n_neighbors=stage_values.get("knn_neighbors", 5))
     raise SystemExit(f"❌ Unknown model '{name}'. Choose random_forest | svm | knn")
 
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    c = stage.knobs
-    seed = stage.cfg["digital_data"].get("seed", 42)
+    stage_values = stage.values
+    seed = stage.all_values["digital_data"].get("seed", 42)
     d = exam.load_features()                     # stage 5's numbers: X_train, X_test, X_snap and the labels
 
     # 📝 The practice exam: cross-validation on the training frames only
-    model = build_model(c, seed)
-    scores = exam.cross_validation(model, d.X_train, d.y_train, d.g_train, c.get("cv_folds"), seed)
+    model = build_model(stage_values, seed)
+    scores = exam.cross_validation(model, d.X_train, d.y_train, d.g_train, stage_values.get("cv_folds"), seed)
     if scores is not None:
         stage.metric("cv accuracy (mean ± std)", f"{scores.mean():.3f} ± {scores.std():.3f}",
                      "The practice exam on the training frames. Close to the test accuracy = a trustworthy estimate.")
@@ -85,7 +85,7 @@ def main() -> None:
     predict_ms = 1000 * (time.perf_counter() - t1) / len(d.y_test)
     snap_proba = model.predict_proba(d.X_snap)[0] if len(d.X_snap) else None
     joblib.dump(model, stage.dir / "model.joblib", compress=3)
-    stage.metric("model", c.get("model", "random_forest"))
+    stage.metric("model", stage_values.get("model", "random_forest"))
 
     side = None
     if hasattr(model, "estimators_"):            # a forest: the crowd against its members
@@ -94,7 +94,7 @@ def main() -> None:
         stage.metric("wisdom of the crowd", float(crowd[-1] - lone.mean()),
                      "Forest minus the average tree. The vote fixes mistakes the trees don't share; near 0 means they all "
                      "make the same mistakes (try max_features).", "good" if crowd[-1] - lone.mean() > 0.02 else "check")
-        names = load_code("extracting").feature_names(stage.cfg["extracting"], d.I_test.shape[1:])
+        names = load_code("extracting").feature_names(stage.all_values["extracting"], d.I_test.shape[1:])
         if len(names) == len(model.feature_importances_):
             top = np.argsort(model.feature_importances_)[::-1][:3]
             stage.metric("features it relies on most", [names[i][0] for i in top],
@@ -107,13 +107,13 @@ def main() -> None:
 
     # 🎓 The exam (🔒 the same for every model)
     exam.take(stage, d, y_pred, snap_proba, stage.dir / "model.joblib", train_s, predict_ms, side,
-              f"6 · {c.get('model', 'random_forest').replace('_', ' ').title()}")
+              f"6 · {stage_values.get('model', 'random_forest').replace('_', ' ').title()}")
 
     stage.tip("`n_estimators: \"5\"`, then 200, then 500. Where does the accuracy stop paying for the time?")
     stage.tip("`max_features: \"null\"`: every tree may look at every feature. Watch the wisdom of the crowd shrink.")
     stage.tip("`model: \"svm\"` and `\"knn\"`, then `scaling: \"none\"` in 5_extracting. Why do these two suffer and the forest doesn't?")
     stage.tip("`class_weight: \"balanced\"`: does the recall of the worst class go up? What does it cost the others?")
-    stage.finish(f"6 · {c.get('model', 'random_forest')}")
+    stage.finish(f"6 · {stage_values.get('model', 'random_forest')}")
 
 
 def wisdom(model, X_test: np.ndarray, y_test: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

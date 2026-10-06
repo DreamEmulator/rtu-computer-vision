@@ -42,42 +42,42 @@ from stages.stage import Stage, run             # 🔒 the plumbing: values, rep
 KEY = "neural_network"
 
 
-def build_network(input_shape: tuple, n_classes: int, knobs: dict, seed: int):
+def build_network(input_shape: tuple, n_classes: int, stage_values: dict, seed: int):
     """Convolution → ReLU → max pooling, `conv_layers` times, then a head that votes."""
     import tensorflow as tf
     layers = tf.keras.layers
     tf.keras.utils.set_random_seed(seed)                       # same seed, same starting weights
     model = tf.keras.Sequential([layers.Input(shape=input_shape), layers.Rescaling(1 / 255.0)])
-    if (knobs.get("input_downscale") or 1) > 1:
-        model.add(layers.AveragePooling2D(knobs["input_downscale"]))   # fewer pixels: faster, coarser
-    for i in range(knobs.get("conv_layers", 3)):
-        model.add(layers.Conv2D(knobs.get("filters", 16) * 2 ** i, 3, padding="same", use_bias=not knobs.get("batch_norm")))
-        if knobs.get("batch_norm"):
+    if (stage_values.get("input_downscale") or 1) > 1:
+        model.add(layers.AveragePooling2D(stage_values["input_downscale"]))   # fewer pixels: faster, coarser
+    for i in range(stage_values.get("conv_layers", 3)):
+        model.add(layers.Conv2D(stage_values.get("filters", 16) * 2 ** i, 3, padding="same", use_bias=not stage_values.get("batch_norm")))
+        if stage_values.get("batch_norm"):
             model.add(layers.BatchNormalization())             # keep every layer's numbers in a trainable range (2015)
         model.add(layers.Activation("relu"))
         model.add(layers.MaxPooling2D())
-    model.add(layers.GlobalAveragePooling2D() if knobs.get("head", "flatten") == "gap" else layers.Flatten())
-    model.add(layers.Dense(knobs.get("dense_units", 64), activation="relu"))
-    model.add(layers.Dropout(knobs.get("dropout", 0.3)))       # silence neurons at random while training: harder to memorise
+    model.add(layers.GlobalAveragePooling2D() if stage_values.get("head", "flatten") == "gap" else layers.Flatten())
+    model.add(layers.Dense(stage_values.get("dense_units", 64), activation="relu"))
+    model.add(layers.Dropout(stage_values.get("dropout", 0.3)))       # silence neurons at random while training: harder to memorise
     model.add(layers.Dense(n_classes, activation="softmax"))   # one probability per class
     return model
 
 
-def train(model, I_train: np.ndarray, y_train: np.ndarray, knobs: dict, seed: int, verbose: int = 2) -> dict:
+def train(model, I_train: np.ndarray, y_train: np.ndarray, stage_values: dict, seed: int, verbose: int = 2) -> dict:
     """Gradient descent with Adam; 15 % of the training frames sit out to watch for memorising. → the history."""
     import tensorflow as tf
-    model.compile(optimizer=tf.keras.optimizers.Adam(knobs.get("learning_rate", 1e-3)),
+    model.compile(optimizer=tf.keras.optimizers.Adam(stage_values.get("learning_rate", 1e-3)),
                   loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     order = np.random.default_rng(seed).permutation(len(y_train))      # mix the classes before the sit-out split
-    history = model.fit(I_train[order], y_train[order], validation_split=0.15, epochs=knobs.get("epochs", 40),
-                        batch_size=knobs.get("batch_size", 32), verbose=verbose)
+    history = model.fit(I_train[order], y_train[order], validation_split=0.15, epochs=stage_values.get("epochs", 40),
+                        batch_size=stage_values.get("batch_size", 32), verbose=verbose)
     return history.history
 
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    c = stage.knobs
-    if not c.get("enabled"):
+    stage_values = stage.values
+    if not stage_values.get("enabled"):
         stage.report.status_override = "off"
         stage.note("Switched off: set enabled to \"true\" in 6_neural-network/action.yaml (and pip install -r requirements-cnn.txt)")
         stage.finish("6 · Neural Network — off")
@@ -87,15 +87,15 @@ def main() -> None:
     except ImportError:
         raise SystemExit("❌ The neural network needs TensorFlow → pip install -r requirements-cnn.txt")
 
-    seed = stage.cfg["digital_data"].get("seed", 42)
+    seed = stage.all_values["digital_data"].get("seed", 42)
     d = exam.load_features()                     # stage 5's output; the network takes the pixels, I_*
     for k in ("I_train", "I_test", "I_snap"):
         if getattr(d, k).ndim == 3:
             setattr(d, k, getattr(d, k)[..., None])  # one channel
 
     t0 = time.time()
-    model = build_network(d.I_train.shape[1:], len(d.classes), c, seed)
-    history = train(model, d.I_train, d.y_train, c, seed)
+    model = build_network(d.I_train.shape[1:], len(d.classes), stage_values, seed)
+    history = train(model, d.I_train, d.y_train, stage_values, seed)
     train_s = time.time() - t0
     t1 = time.perf_counter()
     y_pred = model.predict(d.I_test, verbose=0).argmax(axis=1)
@@ -118,8 +118,8 @@ def main() -> None:
                  f"After this epoch (of {len(acc)}) it got more sure of its wrong answers on frames it doesn't learn from: "
                  "where it started memorising. epochs: that number is early stopping.",
                  "check" if turn + 1 < 0.75 * len(acc) else "good")
-    if (export := c.get("export") or "none") != "none":
-        lite_pred = export_tflite(model, stage.dir, export, d.I_test, d.classes, stage.cfg)
+    if (export := stage_values.get("export") or "none") != "none":
+        lite_pred = export_tflite(model, stage.dir, export, d.I_test, d.classes, stage.all_values)
         stage.metric("tflite test accuracy", float(np.mean(lite_pred == d.y_test)), "The exported FILE, graded on the test set, the way the phone will run it.")
         stage.metric("tflite agrees with keras %", 100 * float(np.mean(lite_pred == y_pred)), "Should be 100, or very close for tflite_quantized.")
         stage.perf("tflite size KB", (stage.dir / "model.tflite").stat().st_size / 1024)
@@ -151,7 +151,7 @@ def draw_learning_curve(ax, history: dict, turn: int) -> None:
 #    The catch: the network only understands frames that went through stages 1–4 exactly as in training.
 #    preprocessing.json writes down what the phone must do first. See how-to/export-a-tflite-file.md.
 
-def export_tflite(model, out_dir, how: str, I_test: np.ndarray, classes: list, cfg: dict) -> np.ndarray:
+def export_tflite(model, out_dir, how: str, I_test: np.ndarray, classes: list, all_values: dict) -> np.ndarray:
     """Write model.tflite and preprocessing.json, then grade the FILE on the test set → its predictions."""
     import tensorflow as tf
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -176,7 +176,7 @@ def export_tflite(model, out_dir, how: str, I_test: np.ndarray, classes: list, c
                           "values": "0–255 pixel values; the model rescales them itself"},
                 "output": "one probability per label, in the order of labels",
                 "preprocessing": [{"stage": k, "code": f"{BY_KEY[k].folder}/{BY_KEY[k].code}",
-                                   "knobs": {n: v for n, v in cfg[k].items() if not n.startswith("gate_")}}
+                                   "stage_values": {n: v for n, v in all_values[k].items() if not n.startswith("gate_")}}
                                   for k in before]}
     (out_dir / "preprocessing.json").write_text(json.dumps(contract, indent=2, default=str, ensure_ascii=False))
     return np.array(preds)

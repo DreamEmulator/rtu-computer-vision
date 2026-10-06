@@ -32,19 +32,19 @@ from stages.stage import Stage, picture, run   # 🔒 the plumbing: values, inpu
 KEY = "extracting"
 
 
-def extract(gray: np.ndarray, knobs: dict) -> dict[str, np.ndarray]:
+def extract(gray: np.ndarray, stage_values: dict) -> dict[str, np.ndarray]:
     """{feature name: vector} for one single-channel frame. main() glues them into one vector."""
     out = {}
-    for name in knobs.get("features") or ["hog"]:
+    for name in stage_values.get("features") or ["hog"]:
         if name == "hog":
-            out["hog"] = hog_features(gray, knobs)
+            out["hog"] = hog_features(gray, stage_values)
         elif name == "lbp":
-            out["lbp"] = lbp_features(gray, knobs)
+            out["lbp"] = lbp_features(gray, stage_values)
         elif name == "histogram":                                # how bright, ignoring where
-            hist, _ = np.histogram(gray, bins=knobs.get("histogram_bins", 32), range=(0, 256))
+            hist, _ = np.histogram(gray, bins=stage_values.get("histogram_bins", 32), range=(0, 256))
             out["histogram"] = hist / gray.size
         elif name == "pixels":                                   # the frame itself, shrunk to a thumbnail
-            s = knobs.get("pixels_size", 16)
+            s = stage_values.get("pixels_size", 16)
             out["pixels"] = cv2.resize(gray, (s, s), interpolation=cv2.INTER_AREA).ravel() / 255.0
         else:
             raise SystemExit(f"❌ Unknown feature '{name}'. Choose hog | lbp | histogram | pixels")
@@ -59,14 +59,14 @@ def extract(gray: np.ndarray, knobs: dict) -> dict[str, np.ndarray]:
 #    edge, like the chamber's walls. 90° = it changes top↔bottom: a horizontal edge, like the fluid line.
 #    Smaller cells see finer detail and make the vector explode: the 🚦 gate guards the camera chip's memory.
 
-def hog_params(knobs: dict) -> dict:
-    p, c = knobs.get("hog_pixels_per_cell", 16), knobs.get("hog_cells_per_block", 2)
-    return {"orientations": knobs.get("hog_orientations", 9), "pixels_per_cell": (p, p), "cells_per_block": (c, c),
+def hog_params(stage_values: dict) -> dict:
+    p, c = stage_values.get("hog_pixels_per_cell", 16), stage_values.get("hog_cells_per_block", 2)
+    return {"orientations": stage_values.get("hog_orientations", 9), "pixels_per_cell": (p, p), "cells_per_block": (c, c),
             "block_norm": "L2-Hys"}
 
 
-def hog_features(gray: np.ndarray, knobs: dict) -> np.ndarray:
-    return hog(gray, feature_vector=True, **hog_params(knobs))
+def hog_features(gray: np.ndarray, stage_values: dict) -> np.ndarray:
+    return hog(gray, feature_vector=True, **hog_params(stage_values))
 
 
 # ── 5b · LBP: Local Binary Patterns ───────────────────────────────────────────────────────────────────
@@ -76,13 +76,13 @@ def hog_features(gray: np.ndarray, knobs: dict) -> np.ndarray:
 #    so the masked black background lands here), P + 1 = noisy. Counting codes per cell of an lbp_grid ×
 #    lbp_grid layout says what the texture is, and roughly where. HOG says which way; LBP says what it feels like.
 
-def lbp_codes(gray: np.ndarray, knobs: dict) -> np.ndarray:
-    return local_binary_pattern(gray, knobs.get("lbp_points", 8), knobs.get("lbp_radius", 1), method="uniform")
+def lbp_codes(gray: np.ndarray, stage_values: dict) -> np.ndarray:
+    return local_binary_pattern(gray, stage_values.get("lbp_points", 8), stage_values.get("lbp_radius", 1), method="uniform")
 
 
-def lbp_features(gray: np.ndarray, knobs: dict) -> np.ndarray:
-    p, grid = knobs.get("lbp_points", 8), knobs.get("lbp_grid", 4)
-    codes = lbp_codes(gray, knobs)
+def lbp_features(gray: np.ndarray, stage_values: dict) -> np.ndarray:
+    p, grid = stage_values.get("lbp_points", 8), stage_values.get("lbp_grid", 4)
+    codes = lbp_codes(gray, stage_values)
     bins, (h, w) = p + 2, gray.shape
     hists = []
     for gy in range(grid):
@@ -102,8 +102,8 @@ def lbp_features(gray: np.ndarray, knobs: dict) -> np.ndarray:
 #    frame brighter than any training frame lands above 1 with minmax. Correct, and a reason to prefer z-scores.
 #    Trees don't care: they only ask "bigger than t?", and stretching a ruler moves t along with it.
 
-def fit_scaler(X_train: np.ndarray, knobs: dict):
-    scaler = {"standard": StandardScaler(), "minmax": MinMaxScaler()}.get(knobs.get("scaling") or "none")
+def fit_scaler(X_train: np.ndarray, stage_values: dict):
+    scaler = {"standard": StandardScaler(), "minmax": MinMaxScaler()}.get(stage_values.get("scaling") or "none")
     return scaler.fit(X_train) if scaler is not None else None
 
 
@@ -134,14 +134,14 @@ def brightness(img: np.ndarray, factor: float) -> np.ndarray:
     return np.clip(img.astype(np.float32) * factor, 0, 255).astype(np.uint8)
 
 
-def augment(img: np.ndarray, knobs: dict, rng: np.random.Generator) -> np.ndarray:
+def augment(img: np.ndarray, stage_values: dict, rng: np.random.Generator) -> np.ndarray:
     """One random copy: maybe flipped, a little rotated and zoomed, a little brighter or darker."""
-    img = flip(img, bool(knobs.get("augment_flip_horizontal")) and rng.random() < 0.5,
-               bool(knobs.get("augment_flip_vertical")) and rng.random() < 0.5)
-    lo, hi = knobs.get("augment_scale") or [1.0, 1.0]
-    r = knobs.get("augment_rotate_degrees") or 0
+    img = flip(img, bool(stage_values.get("augment_flip_horizontal")) and rng.random() < 0.5,
+               bool(stage_values.get("augment_flip_vertical")) and rng.random() < 0.5)
+    lo, hi = stage_values.get("augment_scale") or [1.0, 1.0]
+    r = stage_values.get("augment_rotate_degrees") or 0
     img = affine(img, rng.uniform(-r, r), rng.uniform(lo, hi))
-    b = knobs.get("augment_brightness") or 0
+    b = stage_values.get("augment_brightness") or 0
     if b:
         img = brightness(img, 1 + rng.uniform(-b, b))
     return img
@@ -149,9 +149,9 @@ def augment(img: np.ndarray, knobs: dict, rng: np.random.Generator) -> np.ndarra
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    c, src = stage.knobs, stage.frames()         # every frame stage 4 passed on, and your snap
+    stage_values, src = stage.values, stage.frames()         # every frame stage 4 passed on, and your snap
     space, classes = src.color_space, src.classes
-    rng = np.random.default_rng(stage.cfg["digital_data"].get("seed", 42))
+    rng = np.random.default_rng(stage.all_values["digital_data"].get("seed", 42))
 
     # 5d · Augment TRAIN frames only; the test set must look like the real world, not like our tricks.
     frames, labels, groups, splits = [], [], [], []
@@ -159,19 +159,19 @@ def main() -> None:
     for i, (row, img) in enumerate(zip(src.rows, src.images)):
         frames.append(img); labels.append(row["label"]); groups.append(i); splits.append(row["split"])
         if row["split"] == "train":
-            for k in range(int(c.get("augment_copies") or 0)):
-                aug = augment(img, c, rng)
+            for k in range(int(stage_values.get("augment_copies") or 0)):
+                aug = augment(img, stage_values, rng)
                 frames.append(aug); labels.append(row["label"]); groups.append(i); splits.append("train")
                 if k == 0:
                     augmented_preview[i] = aug
-        elif c.get("augment_copies"):
-            augmented_preview[i] = augment(img, c, rng)  # for the picture only, never used
+        elif stage_values.get("augment_copies"):
+            augmented_preview[i] = augment(img, stage_values, rng)  # for the picture only, never used
 
     # 5a + 5b · Describe every frame
     t0 = time.perf_counter()
     vectors, dims = [], {}
     for f in frames:
-        parts = extract(to_luma(f, space), c)
+        parts = extract(to_luma(f, space), stage_values)
         dims = {k: len(v) for k, v in parts.items()}
         vectors.append(np.concatenate(list(parts.values())))
     ms = 1000 * (time.perf_counter() - t0) / len(frames)
@@ -181,9 +181,9 @@ def main() -> None:
     tr, te, sn = splits == "train", splits == "test", splits == SNAP
 
     # 5c · One ruler, measured on the training frames
-    scaling = c.get("scaling") or "none"
+    scaling = stage_values.get("scaling") or "none"
     X_train, X_test, X_snap = X[tr], X[te], X[sn]
-    scaler = fit_scaler(X_train, c)
+    scaler = fit_scaler(X_train, stage_values)
     if scaler is not None:
         X_train, X_test = scaler.transform(X_train), scaler.transform(X_test)
         X_snap = scaler.transform(X_snap) if len(X_snap) else X_snap
@@ -201,13 +201,13 @@ def main() -> None:
             g = to_luma(img, space)
             picture(steps, "in: from stage 4", img, space)
             picture(steps, "5d augmented copy", augmented_preview[i], space)
-            picture(steps, "5a HOG", hog_picture(g, c))
-            picture(steps, "5b LBP codes", lbp_picture(g, c))
+            picture(steps, "5a HOG", hog_picture(g, stage_values))
+            picture(steps, "5b LBP codes", lbp_picture(g, stage_values))
 
     nans = int(np.isnan(X).sum())
-    gate = c.get("gate_max_features")
+    gate = stage_values.get("gate_max_features")
     before, after = loud_share(X[tr]), loud_share(X_train)
-    stage.metric("features", c.get("features"))
+    stage.metric("features", stage_values.get("features"))
     stage.metric("feature vector length", int(X.shape[1]), f"Numbers per frame. The 🚦 gate allows {gate} (the camera chip's memory).",
                  "good" if gate is None or X.shape[1] <= gate else "bad")
     stage.metric("dims per feature", dims)
@@ -225,8 +225,8 @@ def main() -> None:
     if (i := src.snap_idx) is not None:
         stage.snap("feature vector length", int(X.shape[1]))
         g = to_luma(src.images[i], space)
-        stage.snap_image("hog", hog_picture(g, c), "gray")
-        stage.snap_image("lbp", lbp_picture(g, c), "gray")
+        stage.snap_image("hog", hog_picture(g, stage_values), "gray")
+        stage.snap_image("lbp", lbp_picture(g, stage_values), "gray")
 
     stage.tip("`features: \"[lbp]\"` only, then `\"[hog]\"` only. Which one carries the drop? Run `python run_pipeline.py --from extracting`.")
     stage.tip("`hog_pixels_per_cell: \"8\"`: four times the cells. Watch the vector length and the gate.")
@@ -235,19 +235,19 @@ def main() -> None:
 
     stage.gate("feature vector length", X.shape[1], max=gate)
     stage.gate("NaN values", nans, max=0)
-    stage.finish(f"5 · Extracting — {' + '.join(c.get('features') or [])}, {X.shape[1]} features")
+    stage.finish(f"5 · Extracting — {' + '.join(stage_values.get('features') or [])}, {X.shape[1]} features")
 
 
 # ── Helpers: pictures, names, a measurement ───────────────────────────────────────────────────────────
 
-def hog_picture(gray: np.ndarray, cfg: dict) -> np.ndarray:
+def hog_picture(gray: np.ndarray, stage_values: dict) -> np.ndarray:
     """HOG drawn as little stars: one line per direction, as bright as that direction is strong."""
-    _, vis = hog(gray, visualize=True, **hog_params(cfg))
+    _, vis = hog(gray, visualize=True, **hog_params(stage_values))
     return np.clip(vis / max(vis.max(), 1e-9) * 255, 0, 255).astype(np.uint8)
 
 
-def lbp_picture(gray: np.ndarray, cfg: dict) -> np.ndarray:
-    codes = lbp_codes(gray, cfg)
+def lbp_picture(gray: np.ndarray, stage_values: dict) -> np.ndarray:
+    codes = lbp_codes(gray, stage_values)
     return (codes / max(codes.max(), 1) * 255).astype(np.uint8)
 
 
@@ -261,14 +261,14 @@ def loud_share(X: np.ndarray, share: float = 0.10, pairs: int = 500) -> float:
     return float(100 * d2[:, loud].sum() / max(d2.sum(), 1e-12))
 
 
-def feature_names(cfg: dict, shape: tuple) -> list[tuple[str, tuple | None]]:
+def feature_names(stage_values: dict, shape: tuple) -> list[tuple[str, tuple | None]]:
     """What every number in the vector describes → [(name, (y0, x0, y1, x1) region of the frame, or None)].
     Same order as extract(). Stage 6 uses it to say which features the forest relies on."""
     h, w = shape[:2]
     out = []
-    for name in cfg.get("features") or ["hog"]:
+    for name in stage_values.get("features") or ["hog"]:
         if name == "hog":   # skimage's order: block row, block column, cell in block (row, column), direction
-            p = hog_params(cfg)
+            p = hog_params(stage_values)
             ppc, cpb, o = p["pixels_per_cell"][0], p["cells_per_block"][0], p["orientations"]
             for by in range(h // ppc - cpb + 1):
                 for bx in range(w // ppc - cpb + 1):
@@ -278,17 +278,17 @@ def feature_names(cfg: dict, shape: tuple) -> list[tuple[str, tuple | None]]:
                             out += [(f"HOG cell ({y},{x}) {180 * k // o}–{180 * (k + 1) // o}°",
                                      (y * ppc, x * ppc, (y + 1) * ppc, (x + 1) * ppc)) for k in range(o)]
         elif name == "lbp":
-            pts, grid = cfg.get("lbp_points", 8), cfg.get("lbp_grid", 4)
+            pts, grid = stage_values.get("lbp_points", 8), stage_values.get("lbp_grid", 4)
             kinds = {0: "bright spots", pts: "flat or dark spots", pts + 1: "noisy texture"}
             for gy in range(grid):
                 for gx in range(grid):
                     box = (gy * h // grid, gx * w // grid, (gy + 1) * h // grid, (gx + 1) * w // grid)
                     out += [(f"LBP cell ({gy},{gx}) {kinds.get(b, f'edges {b}/{pts}')}", box) for b in range(pts + 2)]
         elif name == "histogram":
-            bins = cfg.get("histogram_bins", 32)
+            bins = stage_values.get("histogram_bins", 32)
             out += [(f"brightness {256 * b // bins}–{256 * (b + 1) // bins - 1}", None) for b in range(bins)]
         elif name == "pixels":
-            s = cfg.get("pixels_size", 16)
+            s = stage_values.get("pixels_size", 16)
             out += [(f"pixel ({r},{c}) of the {s}×{s} thumbnail", (r * h // s, c * w // s, (r + 1) * h // s, (c + 1) * w // s))
                     for r in range(s) for c in range(s)]
     return out

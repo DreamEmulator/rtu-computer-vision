@@ -4,7 +4,7 @@
 > 🗺️ **Route** · 🌳 6 read the mistakes → back to the stage that caused them → 🌳 6 measure again<br>
 > 🧰 **You need** · your classes in the pipeline first: [How to add my own classes?](add-my-own-classes.md)
 
-Making a model better isn't turning knobs until the number goes up. It's detective work: look at the mistakes, guess the cause, change **one** thing, measure. This How To is that loop.
+Making a model better isn't turning values until the number goes up. It's detective work: look at the mistakes, guess the cause, change **one** thing, measure. This How To is that loop.
 
 ## 🪜 Steps
 
@@ -23,7 +23,7 @@ The gap between the test accuracy and your three photos is how far your test set
 ### 3 · Follow the fork of your biggest pile (below)
 
 ### 4 · One change, one pull request
-- [ ] A branch per experiment, one knob per branch. Fill in the PR template's hypothesis *before* you run, and the numbers after.
+- [ ] A branch per experiment, one value per branch. Fill in the PR template's hypothesis *before* you run, and the numbers after.
 - [ ] Didn't help? Close the PR and write down why. A negative result is still a result.
 
 ### 5 · Back to step 1
@@ -38,9 +38,9 @@ Measure again, look at the new mistakes, pick the next pile.
 | 🎨 black-and-white cows and brown horses mixed up | the model is **colour-blind**: stage 1 makes everything grey, and stage 5 only looks at brightness | `color_space: "lab"` with `channel: 1` (green ↔ red): grass goes dark, brown goes light, black and white stay in the middle. Or the 🧠 network, which sees every channel |
 | 🔍 cows far away | at 128 × 128 a cow 30 px wide in a 640 px frame becomes 6 px wide: Nyquist says it's gone | `size: "[256, 256]"`, or `crop` to where the cows are |
 | ⚖️ cow recall low while the other classes are fine | too few cows, or too little variety | `class_weight: "balanced"`, `augment_copies: "3"`, another video |
-| 🤷 no pattern, and every change moves the score by ±1 % | the features are the ceiling, not the knobs | [How to pick which model I am training?](pick-which-model-i-am-training.md) |
+| 🤷 no pattern, and every change moves the score by ±1 % | the features are the ceiling, not the values | [How to pick which model I am training?](pick-which-model-i-am-training.md) |
 
-Two tests that tell you more than any knob:
+Two tests that tell you more than any value:
 
 - **The background test.** Show it a cow photo on your laptop screen in front of a white wall. Still a cow? Then it learned the cow.
 - **The ablation.** `pass_on: "original"` in Segmenting keeps the stage but ignores its result. If accuracy goes *up*, segmentation was hurting: fix it, or honestly leave it out.

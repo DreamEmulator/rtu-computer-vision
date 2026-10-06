@@ -37,8 +37,8 @@ from stages.stage import Stage, picture, run   # 🔒 the plumbing: values, inpu
 KEY = "improving"
 
 
-def enhance(img: np.ndarray, cfg: dict, color_space: str = "gray") -> np.ndarray:
-    method = cfg.get("method", "clahe")
+def enhance(img: np.ndarray, stage_values: dict, color_space: str = "gray") -> np.ndarray:
+    method = stage_values.get("method", "clahe")
 
     def fn(ch: np.ndarray) -> np.ndarray:
         if method in (None, "none"):
@@ -46,29 +46,29 @@ def enhance(img: np.ndarray, cfg: dict, color_space: str = "gray") -> np.ndarray
         if method == "equalize":
             return cv2.equalizeHist(ch)
         if method == "clahe":
-            t = int(cfg.get("clahe_tile", 8))
-            return cv2.createCLAHE(clipLimit=float(cfg.get("clahe_clip", 2.0)), tileGridSize=(t, t)).apply(ch)
+            t = int(stage_values.get("clahe_tile", 8))
+            return cv2.createCLAHE(clipLimit=float(stage_values.get("clahe_clip", 2.0)), tileGridSize=(t, t)).apply(ch)
         if method == "stretch":
-            lo, hi = np.percentile(ch, cfg.get("stretch_percentiles") or [1, 99])
+            lo, hi = np.percentile(ch, stage_values.get("stretch_percentiles") or [1, 99])
             return np.clip((ch.astype(np.float32) - lo) * 255.0 / max(hi - lo, 1e-6), 0, 255).astype(np.uint8)
         if method == "gamma":
-            lut = (255.0 * (np.arange(256) / 255.0) ** float(cfg.get("gamma", 1.0))).astype(np.uint8)
+            lut = (255.0 * (np.arange(256) / 255.0) ** float(stage_values.get("gamma", 1.0))).astype(np.uint8)
             return cv2.LUT(ch, lut)
         raise SystemExit(f"❌ Unknown method '{method}'. Choose none | equalize | clahe | stretch | gamma")
 
     return on_luma(img, color_space, fn)
 
 
-def edges(img: np.ndarray, cfg: dict, color_space: str = "gray") -> np.ndarray:
-    return cv2.Canny(to_luma(img, color_space), cfg.get("canny_low", 50), cfg.get("canny_high", 150))
+def edges(img: np.ndarray, stage_values: dict, color_space: str = "gray") -> np.ndarray:
+    return cv2.Canny(to_luma(img, color_space), stage_values.get("canny_low", 50), stage_values.get("canny_high", 150))
 
 
-def improve(img: np.ndarray, cfg: dict, space: str, steps: list | None = None) -> tuple[np.ndarray, np.ndarray]:
+def improve(img: np.ndarray, stage_values: dict, space: str, steps: list | None = None) -> tuple[np.ndarray, np.ndarray]:
     """One frame in → (enhanced, its Canny edges)."""
     picture(steps, "in: from stage 2", img, space)
-    better = enhance(img, cfg, space)
-    picture(steps, str(cfg.get("method")), better, space)
-    edge_map = edges(better, cfg, space)
+    better = enhance(img, stage_values, space)
+    picture(steps, str(stage_values.get("method")), better, space)
+    edge_map = edges(better, stage_values, space)
     picture(steps, "Canny edges", edge_map)
     return better, edge_map
 
@@ -80,11 +80,11 @@ def contrast(img: np.ndarray, color_space: str = "gray") -> float:
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    c, frames = stage.knobs, stage.frames()      # every frame stage 2 passed on, and your snap
-    space, pass_on = frames.color_space, c.get("pass_on", "enhanced")
+    stage_values, frames = stage.values, stage.frames()      # every frame stage 2 passed on, and your snap
+    space, pass_on = frames.color_space, stage_values.get("pass_on", "enhanced")
 
     t0 = time.perf_counter()
-    results = [improve(im, c, space, stage.steps(i)) for i, im in enumerate(frames.images)]
+    results = [improve(im, stage_values, space, stage.steps(i)) for i, im in enumerate(frames.images)]
     ms = 1000 * (time.perf_counter() - t0) / max(1, len(results))
     enhanced, edge_maps = [r[0] for r in results], [r[1] for r in results]
     if pass_on == "edges":
@@ -94,8 +94,8 @@ def main() -> None:
 
     before = np.array([contrast(im, space) for im in frames.data()])
     after = np.array([contrast(im, space) for im in frames.data(enhanced)])
-    gate = c.get("gate_min_dim_contrast")
-    stage.metric("method", c.get("method"))
+    gate = stage_values.get("gate_min_dim_contrast")
+    stage.metric("method", stage_values.get("method"))
     stage.metric("contrast before (σ, mean)", before.mean(), "Spread of the grey levels, averaged over the frames as they came in.")
     stage.metric("contrast after (σ, mean)", after.mean(), "The same after improving. Higher = easier to see structure (and noise).")
     stage.metric("contrast of dimmest 5% before", np.percentile(before, 5), "The night shift: the murkiest frames as they came in.")
@@ -120,7 +120,7 @@ def main() -> None:
     stage.tip("`method: \"none\"`: the contrast gate fails, but does the test accuracy drop? Then argue about the gate (see the comment at the top of improving.py).")
 
     stage.gate("contrast of dimmest 5% frames", dim_after, min=gate)
-    stage.finish(f"3 · Improving — {c.get('method')} → passing on: {pass_on}")
+    stage.finish(f"3 · Improving — {stage_values.get('method')} → passing on: {pass_on}")
 
 
 if __name__ == "__main__":

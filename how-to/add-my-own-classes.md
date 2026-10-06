@@ -27,9 +27,9 @@ python -m tools.frames_from_video ~/Desktop/clips/horse_*.mp4 --label horse
 python -m tools.frames_from_video ~/Desktop/clips/field_*.mp4 --label no_animal
 ```
 
-You get one frame every half second (`--every 0.5`), shrunk to 640 px (`--side 640`), in `data/raw/<label>/`. A 20-second video gives 40 frames named `cow-meadow_0000.jpg`, `cow-meadow_0001.jpg`, …: the part before the last `_` says which video a frame came from.
+You get one frame every half second (`--every 0.5`), shrunk to 640 px (`--side 640`), in `images_for_training/<label>/`. A 20-second video gives 40 frames named `cow-meadow_0000.jpg`, `cow-meadow_0001.jpg`, …: the part before the last `_` says which video a frame came from.
 
-- [ ] Flip through `data/raw/cow/`. Blurry, empty, or a different animal? Delete it. Garbage in, garbage out.
+- [ ] Flip through `images_for_training/cow/`. Blurry, empty, or a different animal? Delete it. Garbage in, garbage out.
 
 ### 4 · Point the pipeline at your frames
 - [ ] In [`1_digital-data/action.yaml`](../1_digital-data/action.yaml):
@@ -39,14 +39,14 @@ You get one frame every half second (`--every 0.5`), shrunk to 640 px (`--side 6
     group_by:
       default: "prefix"
   ```
-- [ ] Swap the snap: replace `snaps/default_drip.jpg` with a photo of your own subject (not one of your video frames).
-- [ ] ▶ **0 · Everything** in PyCharm's run menu (🚀 Stages).
+- [ ] Swap the image for analyzing: replace `images_for_analyzing/default_drip.jpg` with a photo of your own subject (not one of your video frames).
+- [ ] ▶ `run_pipeline.py` in PyCharm (or `python run_pipeline.py`): every stage, in a row.
 
 ### 5 · Follow the gates
 Every stage was tuned for a drip chamber on a bright backlight. Your footage is different, and the first red gate tells you where. Fix the first red stage, run again, repeat. The [README](../README.md#the-stages) in that stage's folder tells you which values to try.
 
 ### 6 · Commit and let CI prove it
-- [ ] `git add data/raw 1_digital-data snaps` → commit → push. CI reads the same frames from the repository.
+- [ ] `git add images_for_training 1_digital-data images_for_analyzing` → commit → push. CI reads the same frames from the repository.
 
 ## 🔀 If you see…
 

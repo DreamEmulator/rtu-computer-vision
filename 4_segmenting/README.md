@@ -22,7 +22,7 @@ This folder is the whole stage:
 | File | |
 |---|---|
 | 📖 `README.md` | you are here: why, and what to try |
-| 🎛️ [`action.yaml`](action.yaml) | **the values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
+| 🎛️ [`action.yaml`](action.yaml) | **this stage's values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
 | 🐍 [`segmenting.py`](segmenting.py) | **the code** CI runs, written to be read top to bottom: 4a threshold → 4b morphology → 4c contours → 4d boundary |
 
 Run it: **▶ `segmenting.py` in PyCharm**, or `python 4_segmenting/segmenting.py`. It runs the stages before it if their output is out of date, then this one, on every frame and on your snap. You get, in `build/segmenting/`:
@@ -35,7 +35,7 @@ That's exactly what CI shows for this stage when you push, or when you paste a p
 ## What?
 
 ### Step 0 · Snap 📸
-- [ ] Take a photo of something this stage should cut out, and put it in `snaps/` (or paste its URL into **Run workflow**).
+- [ ] Take a photo of something this stage should cut out, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
 What stage 3 · Improving passed on: enhanced frames with decent contrast, even from the night shift. It's the first column of `before_after.png`.
