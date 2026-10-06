@@ -10,7 +10,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Stage:
     key: str            # build/<key>/ locally, artifact <key> in CI
-    n: int              # position on the Drip Detector slide
+    n: int              # position on the pipeline slide
     title: str
     folder: str         # the stage's folder: README.md, action.yaml and its code
     code: str           # the Python file in that folder that CI runs

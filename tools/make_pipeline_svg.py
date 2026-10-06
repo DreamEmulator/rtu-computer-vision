@@ -1,4 +1,5 @@
-"""Draw the Drip Detector pipeline (after the course slide) with the week's stages highlighted.
+"""Draw the project's pipeline (after the course slide) with each stage highlighted. The name comes from project_name
+in 7_demo-day/action.yaml (python -m tools.rename_project changes it).
 
     python -m tools.make_pipeline_svg      # writes <stage folder>/pipeline.svg for every stage
 """
@@ -47,10 +48,10 @@ def here(x, y):
     return [f'<text x="{x}" y="{y}" font-size="14" font-weight="700" fill="{INK}">◀ you are here</text>']
 
 
-def svg(active: list[str], sub_on: str | None, marker: bool = True) -> str:
+def svg(active: list[str], sub_on: str | None, marker: bool = True, project: str = "Drip Detector") -> str:
     el = [f'<rect x="1" y="1" width="998" height="488" rx="18" fill="{MINT}" stroke="#cfeedd" stroke-width="2"/>',
           f'<text x="32" y="44" font-size="22" font-weight="600" fill="{INK}" text-decoration="underline">'
-          f'Drip Detector · CI-Pipeline</text>']
+          f'{escape(project)} · CI-Pipeline</text>']
     # Step 0 · camera
     el += [f'<rect x="40" y="70" width="58" height="40" rx="7" fill="{INK}"/>',
            f'<rect x="50" y="63" width="18" height="9" rx="2" fill="{INK}"/>',
@@ -81,13 +82,19 @@ def svg(active: list[str], sub_on: str | None, marker: bool = True) -> str:
         el += here(868, 428)
     defs = (f'<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" '
             f'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10" fill="none" stroke="{INK}" stroke-width="2"/></marker></defs>')
-    title = "Drip Detector CI-Pipeline, highlighted: " + ", ".join(active)
+    title = f"{project} CI-Pipeline, highlighted: " + ", ".join(active)
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 490" width="1000" height="490" role="img" '
             f'font-family="{FONT}"><title>{escape(title)}</title>{defs}{"".join(el)}</svg>\n')
 
 
+def project_name() -> str:
+    from stages.common import stage_values_of
+    return str(stage_values_of("demo_day").get("project_name") or "Drip Detector")
+
+
 if __name__ == "__main__":
+    project = project_name()
     for topic, (active, sub_on) in TOPICS.items():
         (ROOT / topic).mkdir(exist_ok=True)
-        (ROOT / topic / "pipeline.svg").write_text(svg(active, sub_on, marker=topic != "."), encoding="utf-8")
+        (ROOT / topic / "pipeline.svg").write_text(svg(active, sub_on, marker=topic != ".", project=project), encoding="utf-8")
         print("wrote", topic + "/pipeline.svg")

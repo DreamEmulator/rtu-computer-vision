@@ -2,7 +2,9 @@
 
 **LA0666 Computer Vision · RTU Liepāja · Fall 2026**
 
-Imagine we're a startup. Our product is a clip-on camera for an IV drip chamber that tells the nurse when an infusion **stops** or is about to **run dry**. Every lecture adds one stage to the product's CI-pipeline, and every push shows whether the product got better or worse.
+A template for building a computer-vision product the way a startup would: every lecture adds one stage to the product's pipeline, every push shows whether the product got better or worse, and theory and practice live in one folder per stage.
+
+**It ships with a worked example, the Drip Detector:** a clip-on camera for an IV drip chamber that tells the nurse when an infusion **stops** or is about to **run dry**. Every stage explains itself with it, and a synthetic dataset of drip chambers makes the whole pipeline run on day one. Learn with the example; [make it yours](#make-it-yours) when you have your own idea.
 
 <p align="center"><img src="cv_pipeline_overview_01.jpeg" alt="JF Peters defines Computer Vision as a set of Layers to get from a Natural Image to a Deterministic Answers. These Layers are the Stages in our Pipeline." width="760"></p>
 
@@ -71,9 +73,17 @@ python run_pipeline.py --from segmenting     # re-run from a stage (slide number
 
 The random forest and the neural network run side by side after Extracting. The network is switched off until Thursday 08.10 (`enabled` in its `action.yaml`). Exam: Thu 15.10.
 
-## Taking it for real: your own subject
+## Make it yours
 
-The pipeline doesn't know it's looking at drips. Put your frames in one folder per class and set `source: "folder"` in [1_digital-data/action.yaml](1_digital-data/action.yaml). See [images_for_training/](images_for_training/), or follow [How to add my own classes?](how-to/add-my-own-classes.md) from video to green gates. Then retune stage by stage; the gates tell you where your data differs from ours.
+The Drip Detector is an example: the pipeline doesn't know it's looking at drips. Four steps, in the order you'll need them:
+
+1. **Name it.** One command changes the project's name everywhere it stands for *your* project: the README title, Demo Day's page, the pipeline pictures, the workflow and the dev container. `--dry-run` shows the list first.
+   ```bash
+   python -m tools.rename_project "Cow Counter" --pitch "A barn camera that counts the cows at milking time."
+   ```
+2. **Your images.** One folder per class in [`images_for_training/`](images_for_training/), then `source: "folder"` in [`1_digital-data/action.yaml`](1_digital-data/action.yaml). From a video to an honest test set: [How to add my own classes?](how-to/add-my-own-classes.md) The photo you want analyzed goes in [`images_for_analyzing/`](images_for_analyzing/).
+3. **Retune, stage by stage.** Every stage was tuned for drip chambers. The gates tell you where your images differ: fix the first red stage, run again.
+4. **Tell your story.** The stage READMEs explain *why* with the drip example, and every stage answers a drip question (`question` in [`stages/registry.py`](stages/registry.py)). Rewrite them for your product: it's the best rehearsal for Demo Day.
 
 ## ❓ How To's
 
@@ -105,7 +115,7 @@ Questions that cross every stage, answered step by step, with forks for what you
 run_pipeline.py                ← the whole pipeline on your machine
 stages/                        ← 🔒 plumbing every stage shares: loading, saving, the report, the exam, gates
 how-to/                        ← ❓ questions that cross every stage
-tools/                         ← synthetic dataset, frames from video, snap trigger, pipeline pictures
+tools/                         ← rename the project, synthetic dataset, frames from video, snap trigger, pipeline pictures
 images_for_training/           ← the images it learns from, one folder per class (source: folder)
 images_for_analyzing/          ← the image it analyzes for you (Step 0); never learned from, never graded
 ```
