@@ -85,6 +85,17 @@ The Drip Detector is an example: the pipeline doesn't know it's looking at drips
 3. **Retune, stage by stage.** Every stage was tuned for drip chambers. The gates tell you where your images differ: fix the first red stage, run again.
 4. **Tell your story.** The stage READMEs explain *why* with the drip example, and every stage answers a drip question (`question` in [`stages/registry.py`](stages/registry.py)). Rewrite them for your product: it's the best rehearsal for Demo Day.
 
+## Updates from the template
+
+The template keeps improving during the course. Bring its updates into your project without losing your own work:
+
+```bash
+python -m tools.sync_template --check     # what's new in the template?
+python -m tools.sync_template             # merge it, on a branch of its own
+```
+
+The first time, it links your project to the template. Every time, it merges on a new branch (`template-sync/<date>`), so `main` stays as it is: run the pipeline, push the branch, open a pull request, merge when CI is green. Where you and the template changed the same lines (usually a stage value), it stops and lets you choose: keep your own stage values. Pipeline pictures it redraws with your project's name by itself.
+
 ## ❓ How To's
 
 Questions that cross every stage, answered step by step, with forks for what you might see on the way. [All How To's](how-to/)
@@ -100,7 +111,7 @@ Questions that cross every stage, answered step by step, with forks for what you
 
 1. Push this repository to GitHub and tick **Settings → General → Template repository**. *Template init* points the links in every Markdown file at each student's own repository.
 2. Publish Demo Day as a website with **Settings → Pages → Source: GitHub Actions** (or the repository variable `ENABLE_PAGES = true`).
-3. The pictures in each README come from `python -m tools.make_pipeline_svg`.
+3. The pictures in each README come from `python -m tools.make_pipeline_svg`. Students pull your updates with `python -m tools.sync_template`; if the template moves, change `TEMPLATE_URL` in `tools/sync_template.py`.
 4. Optional: a web page can start runs (`repository_dispatch`, type `snap`) and follow them live through signed webhooks (repository variable `CV_WEBHOOK_URL`, secret `CV_WEBHOOK_SECRET`). `python -m tools.webhook_receiver` prints the events while you build one.
 
 ## What's where
@@ -115,7 +126,7 @@ Questions that cross every stage, answered step by step, with forks for what you
 run_pipeline.py                ← the whole pipeline on your machine
 stages/                        ← 🔒 plumbing every stage shares: loading, saving, the report, the exam, gates
 how-to/                        ← ❓ questions that cross every stage
-tools/                         ← rename the project, synthetic dataset, frames from video, snap trigger, pipeline pictures
+tools/                         ← rename the project, updates from the template, synthetic dataset, frames from video, pictures
 images_for_training/           ← the images it learns from, one folder per class (source: folder)
 images_for_analyzing/          ← the image it analyzes for you (Step 0); never learned from, never graded
 ```
