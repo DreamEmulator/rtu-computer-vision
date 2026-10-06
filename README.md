@@ -1,4 +1,4 @@
-# 🚀 Drip Detector — a computer-vision startup in a CI-pipeline
+# 🚀 <Your Computer Vision Company> — a computer-vision startup in a CI-pipeline
 
 **LA0666 Computer Vision · RTU Liepāja · Fall 2026**
 
