@@ -94,13 +94,15 @@ def lbp_features(gray: np.ndarray, stage_values: dict) -> np.ndarray:
 
 
 # ── 5c · Scaling & normalization ──────────────────────────────────────────────────────────────────────
-# 👾 Centimetres and kilometres. HOG numbers run from 0 to about 0.3, LBP shares from 0 to 1. A model that
-#    measures distances between frames (kNN, an SVM) hears the biggest numbers shouting and the rest whispering.
+# 👾 Centimetres and kilometres. HOG numbers run from 0 to about 0.3, LBP shares from 0 to 1. Any model that
+#    measures distances between frames hears the biggest numbers shouting and the rest whispering.
 #      minmax    (x − min) / (max − min): every feature squeezed into 0 … 1
 #      standard  (x − μ) / σ, the z-score (Gauss): "how many standard deviations from an average frame"
 #    The ruler is measured on the TRAINING frames only: measuring it on the test set would be peeking. So a test
 #    frame brighter than any training frame lands above 1 with minmax. Correct, and a reason to prefer z-scores.
-#    Trees don't care: they only ask "bigger than t?", and stretching a ruler moves t along with it.
+#    Our two models don't care: trees only ask "bigger than t?" (stretching a ruler moves t along with it), and
+#    the network rescales its own pixels. So here scaling changes the numbers, not the result: a habit for the
+#    day you use a model that measures distances.
 
 def fit_scaler(X_train: np.ndarray, stage_values: dict):
     scaler = {"standard": StandardScaler(), "minmax": MinMaxScaler()}.get(stage_values.get("scaling") or "none")
@@ -216,7 +218,7 @@ def main() -> None:
     stage.metric("scaling", scaling)
     stage.metric("loudest 10% of features, share of a distance", f"{before:.0f} % → {after:.0f} %",
                  "The widest tenth of the features: their share of the distance between two training frames, before → after "
-                 "scaling. Lower = the other features get a say too (that's what kNN and SVM need).",
+                 "scaling. Lower = the other features get a say too (that's what distance-based models need).",
                  "good" if after < before - 5 or scaling == "none" and before < 20 else "check")
     stage.metric("NaN values", nans, "Numbers that aren't numbers. Must be 0.", "good" if nans == 0 else "bad")
     stage.perf("ms per frame", ms)
@@ -230,7 +232,7 @@ def main() -> None:
 
     stage.tip("`features: \"[lbp]\"` only, then `\"[hog]\"` only. Which one carries the drop? Run `python run_pipeline.py --from extracting`.")
     stage.tip("`hog_pixels_per_cell: \"8\"`: four times the cells. Watch the vector length and the gate.")
-    stage.tip("`scaling: \"none\"`: the forest won't care. Then try `model: \"knn\"` in 6_random-forest and watch it suffer.")
+    stage.tip("`scaling: \"none\"`, then `\"minmax\"`: the loudest features change, the forest's accuracy doesn't. Why not?")
     stage.tip("`augment_flip_vertical: \"true\"`: drops falling upwards. Predict what happens to the accuracy, then check.")
 
     stage.gate("feature vector length", X.shape[1], max=gate)

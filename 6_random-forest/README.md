@@ -23,7 +23,7 @@ This folder is the whole stage:
 |---|---|
 | 📖 `README.md` | you are here: why, and what to try |
 | 🎛️ [`action.yaml`](action.yaml) | **this stage's values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
-| 🐍 [`random_forest.py`](random_forest.py) | **the code CI runs**: the model (`build_model`), the crowd of trees, and the exam, written to be read top to bottom |
+| 🐍 [`random_forest.py`](random_forest.py) | **the code CI runs**: the model (`build_model`), the crowd of trees, and how it's evaluated, written to be read top to bottom |
 
 Run it: **▶ `random_forest.py` in PyCharm**, or `python 6_random-forest/random_forest.py`. It runs the stages before it if their output is out of date, then this one. You get, in `build/random_forest/`:
 
@@ -46,17 +46,19 @@ One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your 
 - [ ] `n_estimators: "5"`, then 200, then 500. Where does the accuracy stop paying for the time? The middle panel of `before_after.png` shows the crowd growing.
 - [ ] `max_features: "null"`: every tree may look at every feature. Why does the *wisdom of the crowd* shrink?
 - [ ] `max_depth: "3"` and `min_samples_leaf: "10"`: a simpler forest. Worse, or more robust?
-- [ ] `model: "svm"` and `"knn"`. Then `scaling: "none"` in [5_extracting](../5_extracting/action.yaml) and run both again. ❓ [How to pick which model I am training?](../how-to/pick-which-model-i-am-training.md)
 - [ ] `class_weight: "balanced"`: does the recall of the worst class move?
 
 ### Step 3 · Analyse, and decide if we pass on 🚦
 - [ ] 🚦 **Gates:** test accuracy ≥ 0.85, recall of the worst class ≥ 0.75.
+- [ ] 🎓 **Cross-validation:** is *cv accuracy* close to *test accuracy*? Set `cv_folds` to 0, 5 and 10: how does the ± change?
+- [ ] 🎓 **Confusion matrix:** find the biggest number off the diagonal (left panel of `before_after.png`, and *most common mistake*). Which two classes does it mix up?
+- [ ] 🎓 **Precision and recall:** for each class, compare *precision per class* with *recall per class*. Try `class_weight: "balanced"`: which one moves, and what does it cost?
 - [ ] Read the confusion matrix. Which mistake is dangerous: calling *low_fluid* "drop", or calling *drop* "low_fluid"? Should that change a gate?
 - [ ] Did the forest get your image for analyzing right? If not, what's different between your photo and the training frames? ❓ [How to train our model on cows?](../how-to/train-our-model-on-cows.md)
 
 **Ready to ship?** Gates green, and you can explain the most dangerous mistake. → push, open a pull request: *"Random Forest: what I changed and why"*.
 
 ### Going further: change the code
-The values choose between methods somebody already wrote; [`random_forest.py`](random_forest.py) is where they live. Add a model of your own to `build_model()`, say scikit-learn's `GradientBoostingClassifier` as `"gradient_boosting"`, and set `model` to it. The exam stays the same.
+The values tune the forest; [`random_forest.py`](random_forest.py) is where it's built. Swap it in `build_model()` for another scikit-learn classifier, say `GradientBoostingClassifier`, and compare the reports. How it's evaluated stays the same.
 
 ⬅️ [The whole pipeline](../README.md)

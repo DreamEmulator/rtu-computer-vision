@@ -45,7 +45,7 @@ One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your 
 
 - [ ] `features: "[lbp]"` only, then `"[hog]"` only, then add `histogram` or `pixels`. Which feature carries the drop?
 - [ ] `hog_pixels_per_cell`: 32, 8 and 4. Watch the vector length, the gate (the camera chip's memory) and the accuracy.
-- [ ] `scaling`: `none`, `minmax`, `standard`. Read *loudest 10 % of features* in the report, then try `model: "knn"` in [6_random-forest](../6_random-forest/action.yaml). Why do kNN and SVM care, and the forest doesn't?
+- [ ] `scaling`: `none`, `minmax`, `standard`. Read *loudest 10 % of features* in the report, then the forest's test accuracy (`python run_pipeline.py --from extracting`). The numbers change, the accuracy doesn't: why don't trees care about scaling?
 - [ ] `augment_copies`: 0 against 3. More data, or just more of the same?
 - [ ] `augment_flip_vertical: "true"`: drops falling upwards (see the augmented column). What happens to the accuracy?
 

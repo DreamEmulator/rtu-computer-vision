@@ -26,7 +26,7 @@ This is the file CI runs for this stage. Press ▶ in PyCharm (or `python 6_neur
    head (gap) and more data (augment_copies in stage 5) fight back. On a laptop this takes seconds; AlexNet (2012)
    needed two gaming GPUs and a week, and that's why deep learning took off when it did.
 
-   The network is yours to change (build_network, train); the exam isn't (🔒 stages/exam.py).
+   The network is yours to change (build_network, train); how it's evaluated isn't (🔒 stages/model_evaluation.py).
 """
 import sys, pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # 🔒 finds stages/
 
@@ -35,7 +35,7 @@ import time
 
 import numpy as np
 
-from stages import exam                         # 🔒 the exam: the same for every model
+from stages import model_evaluation             # 🔒 model evaluation: the same for every model
 from stages.registry import BY_KEY
 from stages.stage import Stage, run             # 🔒 the plumbing: values, report, gates
 
@@ -88,7 +88,7 @@ def main() -> None:
         raise SystemExit("❌ The neural network needs TensorFlow → pip install -r requirements-cnn.txt")
 
     seed = stage.all_values["digital_data"].get("seed", 42)
-    d = exam.load_features()                     # stage 5's output; the network takes the pixels, I_*
+    d = model_evaluation.load_features()                     # stage 5's output; the network takes the pixels, I_*
     for k in ("I_train", "I_test", "I_snap"):
         if getattr(d, k).ndim == 3:
             setattr(d, k, getattr(d, k)[..., None])  # one channel
@@ -126,8 +126,8 @@ def main() -> None:
         stage.note("model.tflite and preprocessing.json are in the neural_network artifact")
     stage.metric("model", "cnn")
 
-    # 🎓 The exam (🔒 the same for every model)
-    exam.take(stage, d, y_pred, snap_proba, stage.dir / "model.keras", train_s, predict_ms,
+    # 🎓 Model evaluation (🔒 the same for every model)
+    model_evaluation.take(stage, d, y_pred, snap_proba, stage.dir / "model.keras", train_s, predict_ms,
               lambda ax: draw_learning_curve(ax, history, turn), "6 · Neural Network")
 
     stage.tip("`dropout: \"0.5\"`, then `head: \"gap\"`. Which one closes the memorising gap?")

@@ -13,7 +13,7 @@
 #  CI imports this folder as one stage:  - uses: ./6_random-forest
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 name: "6 · Classifying — random forest"
-description: Train a random forest (or SVM, or kNN) on the features and judge it on the test set.
+description: Train a random forest on the features and judge it on the test set.
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -29,14 +29,6 @@ inputs:
   # │ ⚡ scikit-learn grows every tree in compiled Cython, and n_jobs=-1 puts
   # │    each CPU core of this runner to work on its own trees at the same time.
   # │ 🎮 On an NVIDIA GPU: RAPIDS cuML's RandomForestClassifier, CUDA underneath.
-  # │
-  # │ svm  🏛️ 1995 · Corinna Cortes & Vladimir Vapnik — the widest possible street
-  # │      between classes; the kernel trick bends that street through curved space.
-  # │ knn  🏛️ 1951 · Evelyn Fix & Joseph Hodges — you are what your neighbours are.
-  # │      Both measure distances, so they care about scaling in stage 5. Trees don't.
-  model:
-    description: "random_forest | svm | knn"
-    default: "random_forest"
   n_estimators:
     description: "Number of trees in the forest"
     default: "200"
@@ -52,18 +44,6 @@ inputs:
   class_weight:
     description: "null | balanced — balanced weighs rare classes more"
     default: "null"
-  svm_c:
-    description: "SVM: how hard to punish mistakes"
-    default: "1.0"
-  svm_kernel:
-    description: "SVM: linear | rbf | poly"
-    default: "rbf"
-  svm_gamma:
-    description: "SVM: reach of one training frame (scale | auto | a number)"
-    default: "scale"
-  knn_neighbors:
-    description: "kNN: how many neighbours vote"
-    default: "5"
 
   # │ 🏛️ 1974 · Mervyn Stone: cross-validation — split the training set in k folds,
   # │    train on k−1, grade on the one left out, rotate. Augmented copies stay in
@@ -79,8 +59,12 @@ inputs:
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   # │ 🏛️ 1904 · Karl Pearson's contingency table = our confusion matrix.
   # │    1950s · researchers testing the first machine searches of library
-  # │    documents measured precision and recall. Recall of low_fluid: of all the chambers that
-  # │    were really running dry, how many did we catch? That's patient safety.
+  # │    documents measured precision and recall.
+  # │ Precision of low_fluid: when the model says "running dry", how often is it right?
+  # │    Low precision = false alarms: the nurse runs to a chamber that's fine.
+  # │ Recall of low_fluid: of all the chambers that were really running dry, how many did
+  # │    we catch? Low recall = missed alarms: a chamber runs dry and nobody comes. That's
+  # │    patient safety, so recall has a gate and precision doesn't. Would you add one?
   gate_min_accuracy:
     description: "Test accuracy the model must reach before it may ship"
     default: "0.85"

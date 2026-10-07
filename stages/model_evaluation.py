@@ -1,4 +1,4 @@
-"""🔒 The exam: the same for every classifier, so nobody grades their own homework.
+"""🔒 Model evaluation: the same for every classifier, so nobody grades their own homework.
 
 A classifying stage (6_random-forest/random_forest.py, 6_neural-network/neural_network.py) trains its model,
 predicts the locked test set and your image for analyzing, then calls take(). That writes the numbers, the gates and
@@ -30,7 +30,7 @@ def load_features() -> SimpleNamespace:
 
 
 def cross_validation(model, X, y, groups, folds: int, seed: int) -> np.ndarray | None:
-    """A practice exam on the TRAINING frames (Stone, 1974): train on k−1 folds, grade on the one left out, rotate.
+    """Practice tests on the TRAINING frames (Stone, 1974): train on k−1 folds, grade on the one left out, rotate.
     Augmented copies share a group with their original, so they never leak across folds. None when folds < 2."""
     if not folds or folds < 2:
         return None
@@ -39,13 +39,14 @@ def cross_validation(model, X, y, groups, folds: int, seed: int) -> np.ndarray |
 
 
 def grade(y_test, y_pred, n_classes: int) -> dict:
-    """The exam on the locked test set."""
+    """The grades on the locked test set."""
     labels = range(n_classes)
     return {"accuracy": accuracy_score(y_test, y_pred),
             "precision (macro)": precision_score(y_test, y_pred, average="macro", zero_division=0),
             "recall (macro)": recall_score(y_test, y_pred, average="macro", zero_division=0),
             "f1 (macro)": f1_score(y_test, y_pred, average="macro", zero_division=0),
             "recalls": recall_score(y_test, y_pred, average=None, labels=labels, zero_division=0),
+            "precisions": precision_score(y_test, y_pred, average=None, labels=labels, zero_division=0),
             "confusion": confusion_matrix(y_test, y_pred, labels=labels)}
 
 
@@ -54,8 +55,8 @@ def take(stage, d: SimpleNamespace, y_pred: np.ndarray, snap_proba, model_file, 
     """Grade the predictions, write the report's numbers and gates, and draw before_after.png. → the grades."""
     stage_values, classes = stage.values, d.classes
     baseline = DummyClassifier(strategy="most_frequent").fit(np.zeros((len(d.y_train), 1)), d.y_train)
-    exam = grade(d.y_test, y_pred, len(classes))
-    acc, recalls, cm = exam["accuracy"], exam["recalls"], exam["confusion"]
+    grades = grade(d.y_test, y_pred, len(classes))
+    acc, recalls, cm = grades["accuracy"], grades["recalls"], grades["confusion"]
     (stage.dir / "labels.json").write_text(json.dumps(classes))
     plot(stage.dir / "before_after.png", cm, classes, np.flatnonzero(y_pred != d.y_test), d.I_test, d.y_test, y_pred,
          side, d.color_space, title)
@@ -67,13 +68,21 @@ def take(stage, d: SimpleNamespace, y_pred: np.ndarray, snap_proba, model_file, 
     stage.metric("test accuracy", acc, f"Share of the locked test frames it got right. 🚦 Gate: at least {gate_acc}.",
                  "good" if gate_acc is None or acc >= gate_acc else "bad")
     for k in ("precision (macro)", "recall (macro)", "f1 (macro)"):
-        stage.metric(k, exam[k])
+        stage.metric(k, grades[k])
     stage.metric("recall per class", {k: float(r) for k, r in zip(classes, recalls)},
-                 f"Of all frames of a class, how many it caught. Worst: {classes[worst]}. 🚦 Gate: at least {gate_rec}. "
+                 f"Of all real frames of a class, how many it caught. Worst: {classes[worst]}. 🚦 Gate: at least {gate_rec}. "
                  "Missing a chamber that runs dry is the dangerous mistake.",
                  "good" if gate_rec is None or recalls[worst] >= gate_rec else "bad")
+    stage.metric("precision per class", {k: float(p) for k, p in zip(classes, grades["precisions"])},
+                 "When the model names a class, how often it's right. Low = false alarms: the nurse runs to a chamber that's fine.")
     stage.metric("confusion matrix (rows = true)", " / ".join(" ".join(map(str, row)) for row in cm),
                  "Rows: what it really was. Columns: what the model said. Everything off the diagonal is a mistake.")
+    off = cm.copy()
+    np.fill_diagonal(off, 0)
+    if off.any():
+        t, p = np.unravel_index(np.argmax(off), off.shape)
+        stage.metric("most common mistake", f"{classes[t]} called {classes[p]} ({off[t, p]}×)",
+                     "The biggest number off the diagonal. Is it a false alarm, or a missed one? They don't cost the same.", "check")
     stage.perf("training seconds", train_s)
     stage.perf("ms per prediction", predict_ms)
     stage.perf("model size KB", model_file.stat().st_size / 1024)
@@ -90,7 +99,7 @@ def take(stage, d: SimpleNamespace, y_pred: np.ndarray, snap_proba, model_file, 
 
     stage.gate("test accuracy", acc, min=gate_acc)
     stage.gate("worst class recall", recalls.min(), min=gate_rec)
-    return exam
+    return grades
 
 
 def plot(path, cm, classes, misses, I_test, y_test, y_pred, side, color_space, title):

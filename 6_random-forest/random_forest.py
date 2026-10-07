@@ -21,7 +21,8 @@ Change one value in action.yaml, press ▶ again, and the report says what chang
    and lets them vote (Breiman, 2001). The trees make different mistakes, so the mistakes cancel out. That
    only works if they ARE different: let every tree see every feature (max_features: null) and they grow alike.
 
-   The model is yours to change (build_model below); the exam isn't (🔒 stages/exam.py, the same for every model).
+   The model is yours to change (build_model below); how it's evaluated isn't (🔒 stages/model_evaluation.py, the same for
+   every model).
 """
 import sys, pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # 🔒 finds stages/
 
@@ -29,52 +30,38 @@ import time
 
 import joblib
 import numpy as np
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
 
-from stages import exam                         # 🔒 the exam: the same for every model
+from stages import model_evaluation             # 🔒 model evaluation: the same for every model
 from stages.stage import Stage, load_code, run  # 🔒 the plumbing: values, report, gates
 
 KEY = "random_forest"
 
 
 # ── The model ─────────────────────────────────────────────────────────────────────────────────────────
-#    random_forest  many trees, a vote (above)
-#    svm            the widest possible street between the classes; the kernel trick bends it through curved
-#                   space (Cortes & Vapnik, 1995). It gives distances, not probabilities: Platt (1999) turns
-#                   them into probabilities on held-out folds
-#    knn            you are what your neighbours are (Fix & Hodges, 1951). It keeps every training frame
-#    SVM and kNN measure distances, so they need stage 5's scaling. Trees only ask "bigger than?" and don't.
+#    n_estimators trees, each grown on a random sample of the training frames, each question looking at
+#    max_features random features; max_depth and min_samples_leaf keep the trees simple; class_weight makes
+#    rare classes count more. Trees only ask "bigger than?", so stage 5's scaling doesn't matter to them.
 
-def build_model(stage_values: dict, seed: int):
-    name = stage_values.get("model", "random_forest")
-    if name == "random_forest":
-        return RandomForestClassifier(n_estimators=stage_values.get("n_estimators", 200),
-                                      max_features=stage_values.get("max_features", "sqrt"),
-                                      max_depth=stage_values.get("max_depth"), min_samples_leaf=stage_values.get("min_samples_leaf", 1),
-                                      class_weight=stage_values.get("class_weight"), random_state=seed, n_jobs=-1)
-    if name == "svm":
-        svm = SVC(C=stage_values.get("svm_c", 1.0), kernel=stage_values.get("svm_kernel", "rbf"), gamma=stage_values.get("svm_gamma", "scale"))
-        return CalibratedClassifierCV(svm, ensemble=False)
-    if name == "knn":
-        return KNeighborsClassifier(n_neighbors=stage_values.get("knn_neighbors", 5))
-    raise SystemExit(f"❌ Unknown model '{name}'. Choose random_forest | svm | knn")
+def build_model(stage_values: dict, seed: int) -> RandomForestClassifier:
+    return RandomForestClassifier(n_estimators=stage_values.get("n_estimators", 200),
+                                  max_features=stage_values.get("max_features", "sqrt"),
+                                  max_depth=stage_values.get("max_depth"), min_samples_leaf=stage_values.get("min_samples_leaf", 1),
+                                  class_weight=stage_values.get("class_weight"), random_state=seed, n_jobs=-1)
 
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
     stage_values = stage.values
     seed = stage.all_values["digital_data"].get("seed", 42)
-    d = exam.load_features()                     # stage 5's numbers: X_train, X_test, X_snap and the labels
+    d = model_evaluation.load_features()                     # stage 5's numbers: X_train, X_test, X_snap and the labels
 
-    # 📝 The practice exam: cross-validation on the training frames only
+    # 📝 Practice tests: cross-validation on the training frames only
     model = build_model(stage_values, seed)
-    scores = exam.cross_validation(model, d.X_train, d.y_train, d.g_train, stage_values.get("cv_folds"), seed)
+    scores = model_evaluation.cross_validation(model, d.X_train, d.y_train, d.g_train, stage_values.get("cv_folds"), seed)
     if scores is not None:
         stage.metric("cv accuracy (mean ± std)", f"{scores.mean():.3f} ± {scores.std():.3f}",
-                     "The practice exam on the training frames. Close to the test accuracy = a trustworthy estimate.")
+                     "Practice tests on the training frames. Close to the test accuracy = a trustworthy estimate.")
 
     # 🌳 Learn from every training frame, then answer the locked test set and your image for analyzing
     t0 = time.time()
@@ -85,7 +72,7 @@ def main() -> None:
     predict_ms = 1000 * (time.perf_counter() - t1) / len(d.y_test)
     snap_proba = model.predict_proba(d.X_snap)[0] if len(d.X_snap) else None
     joblib.dump(model, stage.dir / "model.joblib", compress=3)
-    stage.metric("model", stage_values.get("model", "random_forest"))
+    stage.metric("model", "random_forest")
 
     side = None
     if hasattr(model, "estimators_"):            # a forest: the crowd against its members
@@ -105,15 +92,29 @@ def main() -> None:
             stage.snap("trees voting for it", f"{votes} of {len(model.estimators_)}")
         side = lambda ax: draw_wisdom(ax, lone, crowd)  # noqa: E731
 
-    # 🎓 The exam (🔒 the same for every model)
-    exam.take(stage, d, y_pred, snap_proba, stage.dir / "model.joblib", train_s, predict_ms, side,
-              f"6 · {stage_values.get('model', 'random_forest').replace('_', ' ').title()}")
+    # ── 🎓 Model evaluation: four ways to grade the model (the code: 🔒 stages/model_evaluation.py, the same for every model) ──
+    # Cross-validation  Practice tests. Cut the TRAINING frames into cv_folds piles, learn from all piles but one,
+    #                   test on that one, rotate. Five scores: their mean says how good, their spread how lucky.
+    #                   The real test (the locked test set) only comes once, at the end.
+    # Confusion matrix  A scoreboard. One row per real class, one column per answer: how often a real "drop"
+    #                   was called drop, no_drop or low_fluid. Everything off the diagonal is a mistake, and
+    #                   it shows WHICH mistake. Left panel of before_after.png.
+    # Precision         When the model says "low_fluid", how often is it right?   column-wise: right / all it called low_fluid
+    #                   Low precision = false alarms: the nurse runs to a chamber that's fine.
+    # Recall            Of all chambers that really ran dry, how many did it catch?   row-wise: caught / all real low_fluid
+    #                   Low recall = missed alarms: a chamber runs dry and nobody comes. Worse, so recall is gated.
+    # Worked example, with the default values: 28 of the 30 real "drop" frames were called drop, 2 were called no_drop.
+    #   recall(drop)       = 28 / 30 = 0.93   (it missed 2 drops)
+    #   precision(no_drop) = 30 / 32 = 0.94   (it said no_drop 32 times, 2 of them wrongly)
+    # Your numbers: report.md (precision per class, recall per class, the most common mistake) and before_after.png.
+    model_evaluation.take(stage, d, y_pred, snap_proba, stage.dir / "model.joblib", train_s, predict_ms, side,
+              "6 · Random Forest")
 
     stage.tip("`n_estimators: \"5\"`, then 200, then 500. Where does the accuracy stop paying for the time?")
     stage.tip("`max_features: \"null\"`: every tree may look at every feature. Watch the wisdom of the crowd shrink.")
-    stage.tip("`model: \"svm\"` and `\"knn\"`, then `scaling: \"none\"` in 5_extracting. Why do these two suffer and the forest doesn't?")
+    stage.tip("`max_depth: \"3\"`: shallow trees, weak guessers on their own. Is the crowd still wise?")
     stage.tip("`class_weight: \"balanced\"`: does the recall of the worst class go up? What does it cost the others?")
-    stage.finish(f"6 · {stage_values.get('model', 'random_forest')}")
+    stage.finish("6 · Random Forest")
 
 
 def wisdom(model, X_test: np.ndarray, y_test: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

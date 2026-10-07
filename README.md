@@ -104,7 +104,7 @@ Questions that cross every stage, answered step by step, with forks for what you
 |---|---|
 | [add my own classes?](how-to/add-my-own-classes.md) | 🎬 film → frames → `images_for_training/` → an honest test set |
 | [train our model on cows?](how-to/train-our-model-on-cows.md) | 🔍 read the mistakes, find the stage at fault, fix one thing |
-| [pick which model I am training?](how-to/pick-which-model-i-am-training.md) | ⚖️ forest, SVM, kNN or network, with numbers |
+| [pick which model I am training?](how-to/pick-which-model-i-am-training.md) | ⚖️ forest or network, with numbers |
 | [export a tflite file from our pipeline?](how-to/export-a-tflite-file.md) | 📱 a model for a phone, and the catch nobody mentions |
 
 ## For the lecturer
@@ -124,7 +124,7 @@ Questions that cross every stage, answered step by step, with forks for what you
   pipeline.svg                 ← the "you are here" picture
 .github/workflows/pipeline.yml ← the whole pipeline in CI: every stage folder, in a row
 run_pipeline.py                ← the whole pipeline on your machine
-stages/                        ← 🔒 plumbing every stage shares: loading, saving, the report, the exam, gates
+stages/                        ← 🔒 plumbing every stage shares: loading, saving, the report, model evaluation, gates
 how-to/                        ← ❓ questions that cross every stage
 tools/                         ← rename the project, updates from the template, synthetic dataset, frames from video, pictures
 images_for_training/           ← the images it learns from, one folder per class (source: folder)

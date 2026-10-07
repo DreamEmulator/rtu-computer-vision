@@ -1,56 +1,60 @@
 # ❓ How to pick which model I am training?
 
-> 🎯 **Goal** · choose the classifier that ships, with numbers, and say what it costs.<br>
-> 🗺️ **Route** · 🧬 5 Extracting → 🌳 6 forest / SVM / kNN and 🧠 6 network → 🎤 7 Demo Day<br>
+> 🎯 **Goal** · choose the classifier that ships, the random forest or the neural network, with numbers, and say what it costs.<br>
+> 🗺️ **Route** · 🧬 5 Extracting → 🌳 6 random forest and 🧠 6 neural network → 🎤 7 Demo Day<br>
 > 🧰 **You need** · the pipeline running; the synthetic data is fine. For the network: `pip install -r requirements-cnn.txt`
 
 ## The candidates
 
-Two stage-6 jobs run side by side after Extracting, and Demo Day compares them.
+Both run side by side after Extracting, sit the same model evaluation, and Demo Day shows them next to each other.
 
-| | Switch it on in | Learns from |
+| | Where | Learns from |
 |---|---|---|
-| 🌳 random forest | [`6_random-forest/action.yaml`](../6_random-forest/action.yaml) → `model: "random_forest"` | stage 5's feature vectors (HOG, LBP, …), which only describe brightness |
-| 📏 SVM | the same file → `model: "svm"` | the same vectors |
-| 👥 kNN | the same file → `model: "knn"` | the same vectors |
-| 🧠 CNN | [`6_neural-network/action.yaml`](../6_neural-network/action.yaml) → `enabled: "true"` | stage 4's pixels, every channel. It learns its own features and ignores stage 5's |
-
-The forest job holds one model at a time; the network runs next to it.
+| 🌳 random forest | [`6_random-forest/`](../6_random-forest/): always on | stage 5's feature vectors (HOG, LBP): numbers *you* chose to describe each image |
+| 🧠 neural network | [`6_neural-network/`](../6_neural-network/): `enabled: "true"` | stage 4's pixels: it learns its own filters and ignores stage 5's features |
 
 ## 🪜 Steps
 
 ### 1 · Know the bar
 - [ ] Every run reports `baseline (always guess the majority)`: 0.33 with three balanced classes. A model that doesn't clearly beat it hasn't learned anything.
 
-### 2 · Run every candidate on the same data
-- [ ] Change `model`, then `python run_pipeline.py --from random_forest` (stages 1–5 stay as they are).
-- [ ] For the network: `enabled: "true"`, then `python run_pipeline.py --from neural_network`.
-- [ ] Fill in the table from each run's output.
+### 2 · Run both on the same data
+- [ ] The forest: `python run_pipeline.py --from random_forest` (stages 1–5 stay as they are).
+- [ ] The network: `enabled: "true"` in its `action.yaml`, then `python run_pipeline.py --from neural_network`.
+- [ ] Fill in the table from both reports.
 
 Our numbers on the synthetic day-zero data, on a laptop (yours will differ, and that's the point):
 
-| | test accuracy | worst-class recall | cv accuracy | training s | ms per prediction | model size KB |
-|---|---|---|---|---|---|---|
-| 🌳 random forest | **0.98** | 0.93 drop | 0.90 | 1.5 | 0.32 | **363** |
-| 📏 SVM | 0.94 | 0.87 drop | 0.86 | 2.1 | 0.38 | 4114 |
-| 👥 kNN | 0.79 | 0.43 drop | 0.69 | **0.13** | **0.07** | 3555 |
-| 🧠 CNN, default values | 0.78 | 0.57 drop | — | 13 | 1.3 | 3406 · 288 as quantized tflite |
+| | test accuracy | worst-class recall | training s | ms per prediction | model size |
+|---|---|---|---|---|---|
+| 🌳 random forest | **0.98** | **0.93** drop | **1.5** | **0.3** | **363 KB** |
+| 🧠 neural network, default values | 0.78 | 0.57 drop | 13 | 1.3 | 3.4 MB · 288 KB as quantized tflite |
 
-### 3 · Decide, and write it down
+### 3 · Weigh it up
+
+| | 🌳 Random forest | 🧠 Neural network |
+|---|---|---|
+| **Images you need** | dozens to hundreds per class | hundreds to thousands per class; with fewer it memorises |
+| **Can you explain a decision?** | yes: the report names the features it relies on | hard: hundreds of thousands of learned weights |
+| **Your effort goes into…** | good features (stage 5) | data and training (epochs, dropout, augmentation) |
+| **When the classes differ subtly** | limited by your features | can find patterns nobody thought to describe |
+| **On a phone** | the app must also compute HOG and LBP | tflite is built for phones; the app still needs stages 1–4 |
+
+### 4 · Decide, and write it down
 - [ ] One sentence: *"We ship ___ because ___, even though ___."*
+- [ ] Shipping the forest? Set the network back to `enabled: "false"`: a network that fails its gates turns CI red, even when the forest passes.
 
 ## 🔀 If you see…
 
 | You see | It means | Try |
 |---|---|---|
-| SVM or kNN far below the forest | both measure **distances**, so a feature with big numbers drowns the rest. Trees don't care. | check `scaling: "standard"` in stage 5. Without it, SVM drops from 0.94 to 0.88 and kNN from 0.79 to 0.73 on our data |
+| network: training accuracy near 100 %, the frames that sit out far below | memorising: too many weights for too few images | `dropout: "0.5"`, `head: "gap"`, `augment_copies: "3"`, more data. See its [README](../6_neural-network/README.md) |
 | cv accuracy far from test accuracy | a small test set: one lucky or unlucky frame moves the score a lot | trust the cv number more, and collect more data |
-| CNN: training accuracy near 100 %, validation far below | overfitting: it memorised its training frames | `dropout: "0.5"`, `augment_copies: "3"`, more data. See its [README](../6_neural-network/README.md) |
-| every model within a few % of each other | the data or the features are the ceiling, not the model | [How to train our model on cows?](train-our-model-on-cows.md) |
-| kNN's model size grows with every frame you add | kNN keeps the whole training set: the data *is* the model | fine for 300 frames, not for 300 000 |
+| both models within a few % of each other | the data or the features are the ceiling, not the model | [How to train our model on cows?](train-our-model-on-cows.md) |
+| the network wins on your own images | your classes differ in ways HOG and LBP don't describe | keep it, and check the memorising gap once more |
 
 ## 🏆 Done when
-A filled-in table, one chosen model, and the sentence from step 3 in your pull request.
+A filled-in table, one chosen model, and the sentence from step 4 in your pull request.
 
 ## 💼 At work this is called…
 - **Model selection** against a **baseline**: always report what "doing nothing clever" scores.
