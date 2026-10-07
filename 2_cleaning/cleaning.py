@@ -6,7 +6,7 @@ Lecture: Image Preprocessing Methods · Thu 24.09 · Why this stage exists: READ
 This is the file CI runs for this stage. Press ▶ in PyCharm (or `python 2_cleaning/cleaning.py`):
 
     build/cleaning/report.md          the values you passed in, every number explained, the gates
-    build/cleaning/before_after.png   your snap and one test frame per class: in → each filter → what it removed
+    build/cleaning/before_after.png   your image for analyzing and one test frame per class: in → each filter → what it removed
 
 Change one value in action.yaml, press ▶ again, and the report says what changed since your last run.
 
@@ -84,7 +84,7 @@ def removed(before: np.ndarray, after: np.ndarray) -> np.ndarray:
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    stage_values, frames = stage.values, stage.frames()      # every frame stage 1 passed on, and your snap
+    stage_values, frames = stage.values, stage.frames()      # every frame stage 1 passed on, and your image for analyzing
     space = frames.color_space
 
     t0 = time.perf_counter()

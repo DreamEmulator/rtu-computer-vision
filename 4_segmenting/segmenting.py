@@ -7,7 +7,7 @@ This is the file CI runs for this stage. Press ▶ in PyCharm (or run `python 4_
 and you get exactly what CI gets, on your machine:
 
     build/segmenting/report.md           the values you passed in, every number explained, the gates
-    build/segmenting/before_after.png    your snap and one test frame per class, after every step
+    build/segmenting/before_after.png    your image for analyzing and one test frame per class, after every step
 
 Change one value in action.yaml, press ▶ again, and the report says what changed since your last run.
 Read this file top to bottom: four steps, one function each, then main() runs them on every frame.
@@ -158,7 +158,7 @@ def segment(img: np.ndarray, stage_values: dict, space: str, steps: list | None 
 
 def main() -> None:
     stage = Stage("segmenting")                  # the values from action.yaml
-    stage_values, frames = stage.values, stage.frames()  # every frame stage 3 passed on, and your snap
+    stage_values, frames = stage.values, stage.frames()  # every frame stage 3 passed on, and your image for analyzing
     space, how = frames.color_space, stage_values.get("pass_on", "masked")
 
     outputs, masks, outlines, thresholds = [], [], [], []
@@ -169,7 +169,7 @@ def main() -> None:
     ms = 1000 * (time.perf_counter() - t0) / len(frames.images)
     stage.save(outputs, {"color_space": "gray" if how == "mask" else space})
 
-    # 📊 The numbers, over every frame of the dataset (your snap gets its own below)
+    # 📊 The numbers, over every frame of the dataset (your image for analyzing gets its own below)
     data = frames.data_idx
     fg = np.array([(masks[i] > 0).mean() for i in data])
     per_frame = float(np.mean([len(outlines[i]) for i in data]))

@@ -8,7 +8,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: 📡 Tell the snap page if this stage crashed before it could report
+    - name: 📡 Tell the web page if this stage crashed before it could report
       if: always()
       shell: bash
       run: python3 -m stages.webhook crashed --stage ${{ inputs.stage }}

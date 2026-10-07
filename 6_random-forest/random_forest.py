@@ -76,7 +76,7 @@ def main() -> None:
         stage.metric("cv accuracy (mean ± std)", f"{scores.mean():.3f} ± {scores.std():.3f}",
                      "The practice exam on the training frames. Close to the test accuracy = a trustworthy estimate.")
 
-    # 🌳 Learn from every training frame, then answer the locked test set and your snap
+    # 🌳 Learn from every training frame, then answer the locked test set and your image for analyzing
     t0 = time.time()
     model.fit(d.X_train, d.y_train)
     train_s = time.time() - t0

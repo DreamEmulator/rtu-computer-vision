@@ -7,7 +7,7 @@
 #  random_forest.py the code: ▶ it, read build/random_forest/report.md and before_after.png
 #
 #  A model learns from the training features and is graded ONLY on the locked
-#  test set. Then it looks at your snap and makes a call: drop, no_drop or
+#  test set. Then it looks at your image for analyzing and makes a call: drop, no_drop or
 #  low_fluid.
 #
 #  CI imports this folder as one stage:  - uses: ./6_random-forest

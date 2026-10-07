@@ -6,7 +6,7 @@ Lecture: Image Preprocessing Methods · Thu 24.09 · Why this stage exists: READ
 This is the file CI runs for this stage. Press ▶ in PyCharm (or `python 3_improving/improving.py`):
 
     build/improving/report.md          the values you passed in, every number explained, the gates
-    build/improving/before_after.png   your snap and one test frame per class: in → enhanced → Canny edges
+    build/improving/before_after.png   your image for analyzing and one test frame per class: in → enhanced → Canny edges
 
 Change one value in action.yaml, press ▶ again, and the report says what changed since your last run.
 
@@ -80,7 +80,7 @@ def contrast(img: np.ndarray, color_space: str = "gray") -> float:
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    stage_values, frames = stage.values, stage.frames()      # every frame stage 2 passed on, and your snap
+    stage_values, frames = stage.values, stage.frames()      # every frame stage 2 passed on, and your image for analyzing
     space, pass_on = frames.color_space, stage_values.get("pass_on", "enhanced")
 
     t0 = time.perf_counter()

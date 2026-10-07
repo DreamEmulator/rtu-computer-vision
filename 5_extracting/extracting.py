@@ -6,7 +6,7 @@ Lecture: Feature Extraction and Data Preparation · Thu 01.10 · Why: README.md 
 This is the file CI runs for this stage. Press ▶ in PyCharm (or `python 5_extracting/extracting.py`):
 
     build/extracting/report.md          the values you passed in, every number explained, the gates
-    build/extracting/before_after.png   your snap and one test frame per class: in → an augmented copy → HOG → LBP
+    build/extracting/before_after.png   your image for analyzing and one test frame per class: in → an augmented copy → HOG → LBP
 
 Change one value in action.yaml, press ▶ again, and the report says what changed since your last run.
 
@@ -149,7 +149,7 @@ def augment(img: np.ndarray, stage_values: dict, rng: np.random.Generator) -> np
 
 def main() -> None:
     stage = Stage(KEY)                           # the values from action.yaml
-    stage_values, src = stage.values, stage.frames()         # every frame stage 4 passed on, and your snap
+    stage_values, src = stage.values, stage.frames()         # every frame stage 4 passed on, and your image for analyzing
     space, classes = src.color_space, src.classes
     rng = np.random.default_rng(stage.all_values["digital_data"].get("seed", 42))
 

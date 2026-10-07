@@ -11,7 +11,7 @@ On the layer diagram: Natural Scene → Digital Data → Preparing for Analysis 
 
 Here the startup's question finally gets an answer: is the infusion running, stopped, or about to run dry?
 
-A random forest learns from the features and is graded only on the test set we locked on day one. In a hospital accuracy alone isn't enough: missing a chamber that runs dry is worse than a false alarm. So we read the confusion matrix and check the recall of every class. Your snap gets its first real prediction here.
+A random forest learns from the features and is graded only on the test set we locked on day one. In a hospital accuracy alone isn't enough: missing a chamber that runs dry is worse than a false alarm. So we read the confusion matrix and check the recall of every class. Your image for analyzing gets its first real prediction here.
 
 **Without this stage:** all that preparation produces pictures, but no decision.
 
@@ -34,11 +34,11 @@ That's exactly what CI shows for this stage when you push, or when you paste a p
 
 ## What?
 
-### Step 0 · Snap 📸
+### Step 0 · Image for analyzing 📸
 - [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
-What stage 5 passed on, `features.npz`: the training vectors (with augmented copies), the test vectors, your snap's vector, and the labels.
+What stage 5 passed on, `features.npz`: the training vectors (with augmented copies), the test vectors, the vector of your image for analyzing, and the labels.
 
 ### Step 2 · Change a value, run, compare 🎛️
 One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your last run* in the report. Start with the first one.
@@ -52,7 +52,7 @@ One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your 
 ### Step 3 · Analyse, and decide if we pass on 🚦
 - [ ] 🚦 **Gates:** test accuracy ≥ 0.85, recall of the worst class ≥ 0.75.
 - [ ] Read the confusion matrix. Which mistake is dangerous: calling *low_fluid* "drop", or calling *drop* "low_fluid"? Should that change a gate?
-- [ ] Did the forest get your snap right? If not, what's different between your photo and the training frames? ❓ [How to train our model on cows?](../how-to/train-our-model-on-cows.md)
+- [ ] Did the forest get your image for analyzing right? If not, what's different between your photo and the training frames? ❓ [How to train our model on cows?](../how-to/train-our-model-on-cows.md)
 
 **Ready to ship?** Gates green, and you can explain the most dangerous mistake. → push, open a pull request: *"Random Forest: what I changed and why"*.
 

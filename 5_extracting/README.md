@@ -28,13 +28,13 @@ This folder is the whole stage:
 Run it: **▶ `extracting.py` in PyCharm**, or `python 5_extracting/extracting.py`. It runs the stages before it if their output is out of date, then this one. You get, in `build/extracting/`:
 
 - **`report.md`**: the values you passed in, every number with 🟢 🟠 🔴 and what it means, the gates, what to try next, and **what changed since your last run**
-- **`before_after.png`**: your snap and one test frame per class, after every step
+- **`before_after.png`**: your image for analyzing and one test frame per class, after every step
 
 That's exactly what CI shows for this stage when you push, or when you paste a photo URL into **Actions → 🚀 CI-Pipeline → Run workflow**.
 
 ## What?
 
-### Step 0 · Snap 📸
+### Step 0 · Image for analyzing 📸
 - [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥

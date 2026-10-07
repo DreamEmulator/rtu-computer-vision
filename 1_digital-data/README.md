@@ -11,7 +11,7 @@ On the layer diagram: Natural Scene → **Digital Data** → Preparing for Analy
 
 The investors' demo is a camera clipped to an IV drip chamber. But "the camera" is really many cameras: every hospital mounts it differently, some sideways, some in colour, all at different resolutions. A model can only learn from data that looks the same every time.
 
-Digital Data turns whatever arrives, including the photo you snap in Step 0, into one small grid of numbers: 128 × 128 grey values. It also locks away a test set on day one that no model will ever train on, so every accuracy we report later is honest.
+Digital Data turns whatever arrives, including the photo you take in Step 0 (your image for analyzing), into one small grid of numbers: 128 × 128 grey values. It also locks away a test set on day one that no model will ever train on, so every accuracy we report later is honest.
 
 In 1957 Russell Kirsch scanned the first digital photograph: his baby son, 176 × 176 pixels. Our frames are smaller than that, and a runner in a data centre prepares hundreds of them per second.
 
@@ -30,17 +30,17 @@ This folder is the whole stage:
 Run it: **▶ `digital_data.py` in PyCharm**, or `python 1_digital-data/digital_data.py`. It runs the stages before it if their output is out of date, then this one. You get, in `build/digital_data/`:
 
 - **`report.md`**: the values you passed in, every number with 🟢 🟠 🔴 and what it means, the gates, what to try next, and **what changed since your last run**
-- **`before_after.png`**: your snap and one test frame per class, after every step
+- **`before_after.png`**: your image for analyzing and one test frame per class, after every step
 
 That's exactly what CI shows for this stage when you push, or when you paste a photo URL into **Actions → 🚀 CI-Pipeline → Run workflow**.
 
 ## What?
 
-### Step 0 · Snap 📸
+### Step 0 · Image for analyzing 📸
 - [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
-Nothing yet: this is the first stage. Its input is the **Natural Scene** itself: the synthetic day-zero dataset (`source: "synthetic"`), your own images in [`images_for_training/<class>/`](../images_for_training/) (`source: "folder"`), and your snap.
+Nothing yet: this is the first stage. Its input is the **Natural Scene** itself: the synthetic day-zero dataset (`source: "synthetic"`), your own images in [`images_for_training/<class>/`](../images_for_training/) (`source: "folder"`), and your image for analyzing.
 
 ### Step 2 · Change a value, run, compare 🎛️
 One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your last run* in the report. Start with the first one.
@@ -53,7 +53,7 @@ One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your 
 ### Step 3 · Analyse, and decide if we pass on 🚦
 - [ ] 🚦 **Gates:** at least 30 frames per class, zero unreadable files.
 - [ ] Are the classes balanced? Is the train/test split the same after every run (same `seed`)?
-- [ ] Look at your snap's 128 × 128 version in `before_after.png`. Is the information you need still in there?
+- [ ] Look at the 128 × 128 version of your image for analyzing in `before_after.png`. Is the information you need still in there?
 
 **Ready to pass on to Cleaning?** Gates green, and you'd recognise the drop in the pipeline's version yourself. → push, open a pull request: *"Digital Data: what I changed and why"*.
 

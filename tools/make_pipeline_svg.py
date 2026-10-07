@@ -57,7 +57,7 @@ def svg(active: list[str], sub_on: str | None, marker: bool = True, project: str
            f'<rect x="50" y="63" width="18" height="9" rx="2" fill="{INK}"/>',
            f'<circle cx="69" cy="90" r="13" fill="{GO}" stroke="#fff" stroke-width="2.5"/>',
            f'<polygon points="69,82 76,95 62,95" fill="{INK}"/>',
-           f'<text x="112" y="96" font-size="15" fill="{INK}">Step 0 · snap on sdux.tech/computer-vision</text>']
+           f'<text x="112" y="96" font-size="15" fill="{INK}">Step 0 · image for analyzing</text>']
     for lane, (lx, stages, label) in enumerate([(70, PRE, "Pre-Processing"), (520, PRO, "Processing")]):
         el.append(f'<circle cx="{lx - 12}" cy="{150}" r="5" fill="{INK}"/>')
         el.append(f'<text x="{lx}" y="156" font-size="20" font-weight="500" fill="{INK}">{label}</text>')

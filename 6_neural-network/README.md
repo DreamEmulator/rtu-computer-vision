@@ -34,7 +34,7 @@ That's exactly what CI shows for this stage when you push, or when you paste a p
 
 ## What?
 
-### Step 0 · Snap 📸
+### Step 0 · Image for analyzing 📸
 - [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥

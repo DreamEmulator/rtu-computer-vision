@@ -6,7 +6,7 @@ Lecture: Course Summary · Tue 13.10 · Why this stage exists: README.md · The 
 This is the file CI runs last, even when a gate failed earlier, so the report always shows where the pipeline
 stopped. Press ▶ in PyCharm (or `python 7_demo-day/demo_day.py`) after running the pipeline:
 
-    build/demo_day/index.html   one page with the whole story: your snap's journey, every stage's numbers,
+    build/demo_day/index.html   one page with the whole story: the journey of your image for analyzing, every stage's numbers,
                                 gates and before/after picture. CI publishes it on GitHub Pages.
 
 It collects what every stage folder wrote to build/<stage>/: metrics.json and before_after.png.
@@ -31,7 +31,7 @@ PIPELINE = [k for k in ORDER if k != KEY]
 HEADLINE = {"digital_data": "images", "cleaning": "noise σ after", "improving": "contrast of dimmest 5% after",
             "segmenting": "foreground %", "extracting": "feature vector length",
             "random_forest": "test accuracy", "neural_network": "test accuracy"}
-JOURNEY = [("digital_data", "camera", "your snap"), ("digital_data", "output", "digital data"),
+JOURNEY = [("digital_data", "camera", "your image for analyzing"), ("digital_data", "output", "digital data"),
            ("cleaning", "output", "cleaned"), ("improving", "output", "improved"),
            ("segmenting", "overlay", "segmented"), ("extracting", "hog", "HOG features")]
 
@@ -67,7 +67,7 @@ def summary_markdown(results: dict, stage_values: dict) -> str:
         lines.append(f"| {ICON[st]} | {s.emoji} {s.n} · {s.title} | {head} | {gates} | {(m or {}).get('duration_s', '—')} s |")
     preds = predictions(results)
     if preds:
-        lines += ["", "**📸 Your snap:** " + " · ".join(f"{BY_KEY[k].title.split('· ')[-1]} says **{p['prediction']}** "
+        lines += ["", "**📸 Your image for analyzing:** " + " · ".join(f"{BY_KEY[k].title.split('· ')[-1]} says **{p['prediction']}** "
                                                       f"({100 * p['confidence']:.0f}%)" for k, p in preds.items())]
     return "\n".join(lines) + "\n\n📦 The full report is the `demo_day` artifact (open `index.html`).\n"
 
@@ -89,7 +89,7 @@ def journey_html(results: dict) -> str:
         cells.append(f'<figure class="verdict-card"><strong>{esc(p["prediction"])}</strong>'
                      f'<span>{100 * p["confidence"]:.0f}% sure</span><figcaption>{esc(BY_KEY[k].title.split("· ")[-1])}'
                      f'</figcaption></figure>')
-    return f'<section class="journey"><h2>Your snap, stage by stage</h2><div class="strip-row">{"".join(cells)}</div></section>' if cells else ""
+    return f'<section class="journey"><h2>Your image for analyzing, stage by stage</h2><div class="strip-row">{"".join(cells)}</div></section>' if cells else ""
 
 
 CSS = """

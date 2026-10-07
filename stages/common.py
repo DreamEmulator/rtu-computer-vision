@@ -1,4 +1,4 @@
-"""Shared plumbing for every stage: stage values, stage I/O, the snap, previews, gates and reporting.
+"""Shared plumbing for every stage: stage values, stage I/O, the image for analyzing, previews, gates and reporting.
 
 You rarely need to edit this file. The interesting code lives in every stage folder's Python file, and
 the interesting *decisions* in the values of every stage folder's action.yaml.
@@ -199,42 +199,6 @@ def timed(fn, items) -> tuple[list, float]:
     return out, 1000 * (time.perf_counter() - t0) / max(1, len(items))
 
 
-# ---------------------------------------------------------------- previews
-
-def sample_indices(rows: list[dict], per_class: int = 3) -> list[int]:
-    """The same test images in every stage, so you can follow one frame through the pipeline."""
-    picked = []
-    for c in sorted({r["label"] for r in rows if r["split"] != SNAP}):
-        picked += [i for i, r in enumerate(rows) if r["label"] == c and r["split"] == "test"][:per_class]
-    return picked
-
-
-def contact_sheet(path: Path, rows: list[dict], strips: list[tuple[str, list[np.ndarray], str]],
-                  title: str, per_class: int = 3) -> None:
-    """strips = [(row label, images aligned with rows, colour space), ...]. The snap gets its own column."""
-    from matplotlib.figure import Figure  # no pyplot: headless in CI
-
-    idx = sample_indices(rows, per_class)
-    snap = next((i for i, r in enumerate(rows) if r["split"] == SNAP), None)
-    if snap is not None:
-        idx.append(snap)
-    fig = Figure(figsize=(1.7 * len(idx), 1.9 * len(strips) + 0.5))
-    axes = fig.subplots(len(strips), len(idx), squeeze=False)
-    for r, (name, imgs, space) in enumerate(strips):
-        for c, i in enumerate(idx):
-            ax = axes[r][c]
-            im = to_display(imgs[i], space)
-            ax.imshow(im, cmap="gray" if im.ndim == 2 else None, vmin=0, vmax=255)
-            ax.set_xticks([]); ax.set_yticks([])
-            if r == 0:
-                ax.set_title("Your snap" if i == snap else rows[i]["label"], fontsize=9)
-            if c == 0:
-                ax.set_ylabel(name, fontsize=9)
-    fig.suptitle(title, fontsize=11)
-    fig.tight_layout()
-    fig.savefig(path, dpi=110)
-
-
 # ---------------------------------------------------------------- report, gates & webhooks
 
 def _fmt(v):
@@ -260,7 +224,7 @@ def _plain(v):
 
 
 class StageReport:
-    """Collects metrics, gates and the snap's journey; writes metrics.json, the CI summary and the webhook.
+    """Collects metrics, gates and the journey of the image for analyzing; writes metrics.json, the CI summary and the webhook.
 
     A gate is a promise the startup makes ("we never ship below 85 % accuracy"). If one fails, the stage
     exits with code 1: the job turns red and the stages after it don't run, like a failing unit test.
@@ -352,7 +316,7 @@ class StageReport:
         elif self.metrics:
             out += ["| Metric | Value |", "|---|---|"] + [f"| {k} | {_fmt(v)} |" for k, v in self.metrics.items()] + [""]
         if self.snap_metrics:
-            out += ["**📸 Your snap** " + " · ".join(f"{k}: {_fmt(v)}" for k, v in self.snap_metrics.items()), ""]
+            out += ["**📸 Your image for analyzing** " + " · ".join(f"{k}: {_fmt(v)}" for k, v in self.snap_metrics.items()), ""]
         if self.tips:
             out += ["**💡 What to try next**", "", *[f"- {t}" for t in self.tips], ""]
         if self.performance:

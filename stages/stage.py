@@ -44,7 +44,7 @@ class Stage:
         self._steps: dict[int, list] = {}
 
     def frames(self) -> ImageSet:
-        """What the previous stage passed on: every frame, its label and split, and your snap."""
+        """What the previous stage passed on: every frame, its label and split, and your image for analyzing."""
         self.input = load_images(self.info.previous)
         self.picture_rows(self.input.rows)
         return self.input
@@ -78,8 +78,8 @@ def picture(steps: list | None, name: str, image, space: str = "gray") -> None:
 
 
 def pictured(rows: list[dict]) -> dict[int, str]:
-    """The frames in before_after.png: your snap, then the first test frame of every class."""
-    out = {i: "your snap" for i, r in enumerate(rows) if r["split"] == SNAP}
+    """The frames in before_after.png: your image for analyzing, then the first test frame of every class."""
+    out = {i: "image for analyzing" for i, r in enumerate(rows) if r["split"] == SNAP}
     for c in sorted({r["label"] for r in rows if r["split"] != SNAP}):
         i = next((i for i, r in enumerate(rows) if r["label"] == c and r["split"] == "test"), None)
         if i is not None:

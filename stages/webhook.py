@@ -1,11 +1,10 @@
-"""Step 0's other half: tell the sdux.tech page what happens to the snap, while it happens.
+"""Step 0's other half: tell a web page what happens to the image for analyzing, while it happens.
 
 Every event is a JSON POST to $CV_WEBHOOK_URL. When $CV_WEBHOOK_SECRET is set, the body is signed
 with HMAC-SHA256 in the header  X-CV-Signature-256: sha256=<hex>  (GitHub's own webhook scheme).
 No URL, no events. A webhook that can't be delivered never fails the pipeline.
 
 Events: pipeline.started · stage.started · stage.finished · pipeline.finished
-Contract and examples: docs/step-0-snap.md
 
 CLI, used by the composite actions before Python dependencies are installed (stdlib only):
     python3 -m stages.webhook started --stage cleaning

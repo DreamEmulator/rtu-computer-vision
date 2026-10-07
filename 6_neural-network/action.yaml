@@ -20,7 +20,7 @@ inputs:
   #    🎛️  Experiment with this stage's values — change one, ▶ neural_network.py, read the report
   # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   enabled:
-    description: "true switches the network on (installs TensorFlow, trains, predicts your snap)"
+    description: "true switches the network on (installs TensorFlow, trains, predicts your image for analyzing)"
     default: "false"
 
   # │ 🏛️ 1943 · McCulloch & Pitts: a neuron as a weighted sum and a threshold.

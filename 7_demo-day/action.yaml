@@ -6,7 +6,7 @@
 #  action.yaml     you are here: this stage's values, demo_day.py runs with them
 #  demo_day.py     the code: ▶ it, read build/demo_day/report.md and before_after.png
 #
-#  Collects every stage's metrics, gates, previews and your snap's journey into
+#  Collects every stage's metrics, gates, previews and the journey of your image for analyzing into
 #  one page, sends pipeline.finished to the sdux.tech page, and (if Pages is on)
 #  publishes the report as a website. Runs even when a gate failed.
 #

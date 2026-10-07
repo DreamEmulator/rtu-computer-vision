@@ -25,16 +25,16 @@ This folder is the whole stage:
 | 🎛️ [`action.yaml`](action.yaml) | **this stage's values**: every one you may change, with the mathematician who thought of it, and the 🚦 gates |
 | 🐍 [`segmenting.py`](segmenting.py) | **the code** CI runs, written to be read top to bottom: 4a threshold → 4b morphology → 4c contours → 4d boundary |
 
-Run it: **▶ `segmenting.py` in PyCharm**, or `python 4_segmenting/segmenting.py`. It runs the stages before it if their output is out of date, then this one, on every frame and on your snap. You get, in `build/segmenting/`:
+Run it: **▶ `segmenting.py` in PyCharm**, or `python 4_segmenting/segmenting.py`. It runs the stages before it if their output is out of date, then this one, on every frame and on your image for analyzing. You get, in `build/segmenting/`:
 
 - **`report.md`**: the values you passed in, every number with 🟢 🟠 🔴 and what it means, the gates, what to try next, and **what changed since your last run**
-- **`before_after.png`**: your snap and one test frame per class, after every step
+- **`before_after.png`**: your image for analyzing and one test frame per class, after every step
 
 That's exactly what CI shows for this stage when you push, or when you paste a photo URL into **Actions → 🚀 CI-Pipeline → Run workflow**.
 
 ## What?
 
-### Step 0 · Snap 📸
+### Step 0 · Image for analyzing 📸
 - [ ] Take a photo of something this stage should cut out, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
@@ -52,7 +52,7 @@ One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your 
 
 ### Step 3 · Analyse, and decide if we pass on 🚦
 - [ ] 🚦 **Gates:** at most 5 % of frames with an empty mask, at most 5 % with a full one.
-- [ ] Is the chamber in *your* snap cut out, or the wall behind it?
+- [ ] Is the chamber in *your* image for analyzing cut out, or the wall behind it?
 
 **Ready to pass on to Extracting?** Gates green and the outlines hug the chamber → push, open a pull request: *"Segmenting: what I changed and why"*.
 

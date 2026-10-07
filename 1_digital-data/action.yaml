@@ -6,14 +6,14 @@
 #  action.yaml     you are here: this stage's values, digital_data.py runs with them
 #  digital_data.py the code: ▶ it, read build/digital_data/report.md and before_after.png
 #
-#  Every frame (and your snap from Step 0) becomes a grid of numbers with the
+#  Every frame (and your image for analyzing from Step 0) becomes a grid of numbers with the
 #  same size, orientation and colour space. The train/test split is locked here,
 #  on day one, and never touched again.
 #
 #  CI imports this folder as one stage:  - uses: ./1_digital-data
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 name: "1 · Digital Data — prepare"
-description: Collect, split and normalise every frame, plus the snap from Step 0.
+description: Collect, split and normalise every frame, plus the image for analyzing from Step 0.
 
 inputs:
   # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓

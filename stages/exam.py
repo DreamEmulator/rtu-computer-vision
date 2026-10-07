@@ -1,7 +1,7 @@
 """🔒 The exam: the same for every classifier, so nobody grades their own homework.
 
 A classifying stage (6_random-forest/random_forest.py, 6_neural-network/neural_network.py) trains its model,
-predicts the locked test set and your snap, then calls take(). That writes the numbers, the gates and
+predicts the locked test set and your image for analyzing, then calls take(). That writes the numbers, the gates and
 before_after.png: the confusion matrix, how the model learned, and the test frames it got wrong.
 """
 from __future__ import annotations

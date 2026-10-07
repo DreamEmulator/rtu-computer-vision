@@ -11,7 +11,7 @@ On the layer diagram: Natural Scene → Digital Data → Preparing for Analysis 
 
 Inference is the moment that matters: a model makes a call on a frame it has never seen, and a nurse gets told.
 
-Demo Day collects every stage's metrics, gates and previews into one page, shows your snap's journey from camera to prediction. It's what you show the investors on Tuesday 13.10, and the exam on Thursday 15.10 walks the same pipeline: why, how and what, stage by stage.
+Demo Day collects every stage's metrics, gates and previews into one page, shows the journey of your image for analyzing from camera to prediction. It's what you show the investors on Tuesday 13.10, and the exam on Thursday 15.10 walks the same pipeline: why, how and what, stage by stage.
 
 **Without this stage:** a pile of green checkmarks that nobody outside the team understands.
 
@@ -29,7 +29,7 @@ Run it: **▶ `demo_day.py` in PyCharm** after the pipeline ran, or `python 7_de
 
 ## What?
 
-### Step 0 · Snap 📸
+### Step 0 · Image for analyzing 📸
 - [ ] Take a photo of what your product should recognise, and put it in [`images_for_analyzing/`](../images_for_analyzing/) (or paste its URL into **Run workflow**).
 
 ### Step 1 · Input 📥
@@ -39,7 +39,7 @@ Every stage's output. Demo Day runs even when a gate failed, so the page always 
 One value at a time in [`action.yaml`](action.yaml), ▶, then read *Since your last run* in the report. Start with the first one.
 
 - [ ] Name your startup and write a pitch an investor remembers: `project_name`, `pitch`.
-- [ ] Snap three photos, one of each class. How many does the pipeline get right? Real photos against synthetic training data: that gap has a name, *domain shift*.
+- [ ] Take three photos, one of each class. How many does the pipeline get right? Real photos against synthetic training data: that gap has a name, *domain shift*.
 - [ ] Where does the time go? Compare the durations of every stage on the page.
 - [ ] Put the page online: **Settings → Pages → Source: GitHub Actions**, then add the repository variable `ENABLE_PAGES` = `true`.
 

@@ -56,7 +56,7 @@ Every stage was tuned for a drip chamber on a bright backlight. Your footage is 
 | ❌ `cow comes from one video only` | `group_by: prefix` needs at least two videos per class: one for training, one for the test | film a second video |
 | ❌ `empty mask ratio` or `full mask ratio` in Segmenting | the threshold expects a dark object on a bright wall | [stage 4](../4_segmenting/README.md): try `invert` and `threshold`, ▶ `segmenting.py` and look at the cow row of `before_after.png`; or `pass_on: "original"` |
 | 99 % test accuracy with `group_by: file`, much less with `prefix` | the 99 % was a leak (see below) | trust the lower number |
-| all gates green, but your snap gets the wrong answer | the test set doesn't look like the real world yet | [How to train our model on cows?](train-our-model-on-cows.md) |
+| all gates green, but your image for analyzing gets the wrong answer | the test set doesn't look like the real world yet | [How to train our model on cows?](train-our-model-on-cows.md) |
 
 ## 🧠 Why `group_by: prefix`?
 

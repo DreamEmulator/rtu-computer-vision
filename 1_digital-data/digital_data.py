@@ -6,13 +6,13 @@ Lecture: Introduction to Image Processing · Tue 22.09 · Why this stage exists:
 This is the file CI runs for this stage. Press ▶ in PyCharm (or `python 1_digital-data/digital_data.py`):
 
     build/digital_data/report.md          the values you passed in, every number explained, the gates
-    build/digital_data/before_after.png   your snap and one test frame per class: camera → pipeline input
+    build/digital_data/before_after.png   your image for analyzing and one test frame per class: camera → pipeline input
 
 Change one value in action.yaml, press ▶ again, and the report says what changed since your last run.
 
 👾 Pixels are numbers. A camera frame is a NumPy array of height × width × 3 channels (blue, green, red in
    OpenCV), every value 0 … 255. Every later stage needs the SAME kind of array, whatever camera or file
-   format a frame came from. So this stage, for every frame and for your snap:
+   format a frame came from. So this stage, for every frame and for your image for analyzing:
      1. rotate      a sideways-mounted camera (a transpose and a flip: no maths at all)
      2. crop        keep the part of the frame that matters (a NumPy view: no pixel is copied)
      3. resize      every frame the same size. Shrinking throws pixels away: Nyquist & Shannon say a detail
@@ -118,10 +118,10 @@ def fetch_snap(src: str) -> tuple[np.ndarray, int]:
     else:
         data = Path(src).expanduser().read_bytes()
     if len(data) > MAX_SNAP_BYTES:
-        raise ValueError("The snap is larger than 15 MB.")
+        raise ValueError("The image for analyzing is larger than 15 MB.")
     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
     if img is None:
-        raise ValueError("Couldn't decode the snap. Send a jpg, png or webp.")
+        raise ValueError("Couldn't decode the image for analyzing. Send a jpg, png or webp.")
     return img, len(data)
 
 def default_snap() -> str:
@@ -202,7 +202,7 @@ def main() -> None:
 
     stage.save(images, {"color_space": space, "classes": classes}, rows=rows)
 
-    # 👀 before_after.png: the camera frame and every step, for your snap and one test frame per class
+    # 👀 before_after.png: the camera frame and every step, for your image for analyzing and one test frame per class
     stage.picture_rows(rows)
     for i, r in enumerate(rows):
         if (steps := stage.steps(i)) is not None:

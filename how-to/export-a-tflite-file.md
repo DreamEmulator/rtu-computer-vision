@@ -50,7 +50,7 @@ def ask(frame, what):
     p = model.get_tensor(out["index"])[0]
     print(f"{what:<40} → {labels[p.argmax()]} ({p.max():.0%})")
 
-ask(cv2.imread("build/segmenting/images/snap.png", cv2.IMREAD_GRAYSCALE), "the snap after stages 1–4")
+ask(cv2.imread("build/segmenting/images/snap.png", cv2.IMREAD_GRAYSCALE), "the image for analyzing after stages 1–4")
 raw = cv2.imread("images_for_analyzing/default_drip.jpg", cv2.IMREAD_GRAYSCALE)
 ask(cv2.resize(raw, (128, 128), interpolation=cv2.INTER_AREA), "the raw photo, only resized")
 ```
@@ -58,7 +58,7 @@ ask(cv2.resize(raw, (128, 128), interpolation=cv2.INTER_AREA), "the raw photo, o
 What we got:
 
 ```
-the snap after stages 1–4                → drop (100%)
+the image for analyzing after stages 1–4 → drop (100%)
 the raw photo, only resized              → no_drop (100%)
 ```
 

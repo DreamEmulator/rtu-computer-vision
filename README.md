@@ -8,7 +8,7 @@ A template for building a computer-vision product the way a startup would: every
 
 <p align="center"><img src="cv_pipeline_overview_01.jpeg" alt="JF Peters defines Computer Vision as a set of Layers to get from a Natural Image to a Deterministic Answers. These Layers are the Stages in our Pipeline." width="760"></p>
 
-<p align="center"><img src="cv_pipeline_overview_02.jpeg" alt="The Drip Detector CI-pipeline: Step 0 snap, Pre-Processing (Digital Data, Cleaning, Improving), Processing (Segmenting, Extracting, Classifying) and Inference" width="760"></p>
+<p align="center"><img src="cv_pipeline_overview_02.jpeg" alt="The Drip Detector CI-pipeline: Step 0 image for analyzing, Pre-Processing (Digital Data, Cleaning, Improving), Processing (Segmenting, Extracting, Classifying) and Inference" width="760"></p>
 
 ## How this repository works
 
@@ -24,7 +24,7 @@ Run a stage and it writes two things to `build/<stage>/`: **`report.md`** (the v
 
 That's the whole loop, folder by folder, with apologies to the Underpants Gnomes (*Step 1: collect underpants. Step 2: ? Step 3: profit.*):
 
-* **Step 0 · Snap.** Put a photo in [`images_for_analyzing/`](images_for_analyzing/), or paste its URL into **Actions → 🚀 CI-Pipeline → Run workflow**.
+* **Step 0 · Image for analyzing.** Put a photo in [`images_for_analyzing/`](images_for_analyzing/), or paste its URL into **Actions → 🚀 CI-Pipeline → Run workflow**.
 * **Step 1 · Read.** The stage's README: why it exists, and what it gets from the stage before.
 * **Step 2 · Change a value, run, compare.** One value in `action.yaml`, ▶ the stage's `.py`, read *Since your last run* in the report and look at the picture. Curious how it works? Read the code, and change that too.
 * **Step 3 · Decide.** The gates say whether the stage is ready to pass on. Push, and CI runs every stage in a row.

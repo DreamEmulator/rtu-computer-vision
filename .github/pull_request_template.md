@@ -15,7 +15,7 @@
 | test accuracy | | |
 | worst class recall | | |
 | gates passed | | |
-| 📸 snap verdict (if you sent one) | | |
+| 📸 verdict on your image for analyzing (if you sent one) | | |
 
 <!-- Copy the numbers from the "🎤 Demo Day" table in the run summary of main and of this PR. -->
 

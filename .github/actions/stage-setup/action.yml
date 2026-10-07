@@ -12,7 +12,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: 📡 Tell the snap page this stage started
+    - name: 📡 Tell the web page this stage started
       shell: bash
       run: python3 -m stages.webhook started --stage ${{ inputs.stage }}
     - uses: actions/setup-python@v5
